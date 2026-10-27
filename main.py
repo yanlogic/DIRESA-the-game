@@ -82,6 +82,39 @@ CONFLICTS = {
 }
 
 # ----------------------------------------------------------------------------
+# HOSPITAL NUEVO: plano visto desde arriba + salas de perfil
+# ----------------------------------------------------------------------------
+PLANO_IMG = "assets/hospital_plano.png"           # el dibujo del hospital
+PLANO_COL = "assets/hospital_colisiones.png"      # dónde se puede caminar (blanco) y dónde no (negro)
+MAP_START = (296, 510)    # dónde aparece tu personaje al entrar (esquina de su dibujo de 32x32)
+MAP_SPEED = 1.5           # velocidad en el plano
+CONFLICT_RADIUS = 190     # a qué distancia del medio de dos stakeholders se ve su discusión
+
+# color de la zona de puerta en hospital_colisiones.png  ->  sala a la que lleva
+DOOR_COLORS = {
+    (255, 0, 0): "admin",
+    (255, 128, 0): "consultorio",
+    (255, 255, 0): "triaje",
+    (0, 200, 0): "admision",
+    (0, 200, 255): "direccion",
+    (0, 0, 255): "farmacia",
+    (200, 0, 255): "espera",
+}
+
+# cada sala: nombre, stakeholder que vive ahí, dónde está parado en el plano (map_pos)
+# y dónde está parado dentro de la sala de perfil (x)
+SALAS = {
+    "admision":    dict(name="Admisión",              npc="patroclo",   map_pos=(64, 434),  x=284),
+    "triaje":      dict(name="Triaje",                npc="sara",       map_pos=(236, 256), x=236),
+    "consultorio": dict(name="Consultorio",           npc="jeremy",     map_pos=(266, 64),  x=222),
+    "admin":       dict(name="Administración / MINSA", npc="admin",     map_pos=(84, 60),   x=176),
+    "farmacia":    dict(name="Farmacia",              npc="farmacia",   map_pos=(560, 266), x=286),
+    "espera":      dict(name="Sala de espera",        npc="pacientes2", map_pos=(556, 476), x=258),
+    "direccion":   dict(name="Dirección · DIRESA",    npc="diresa",     map_pos=(444, 44),  x=228),
+}
+
+
+# ----------------------------------------------------------------------------
 # Utilidades de dibujo pixel art
 # ----------------------------------------------------------------------------
 def box(s, c, x, y, w, h):
@@ -479,6 +512,23 @@ def load_npc_sprites():
             out[n["id"]] = grow(make_npc_sprite(n["body"], n["accent"], n["kind"]))
     return out
 
+def load_map_sprites():
+    """Tu personaje en el plano (32x32, sin agrandar): 4 direcciones x 4 cuadros de caminata."""
+    out = {}
+    for d in ("frente", "espalda", "izquierda", "derecha"):
+        out[d] = [pygame.image.load(res(f"assets/jugador_{d}_{i}.png")).convert_alpha() for i in range(1, 5)]
+    return out
+
+def load_npc_front():
+    """Los stakeholders de frente (32x32) para verlos en el plano."""
+    out = {}
+    for n in NPCS:
+        p = res(f"assets/npc_{n['id']}_frente.png")
+        if os.path.exists(p):
+            out[n["id"]] = pygame.image.load(p).convert_alpha()
+        else:
+            out[n["id"]] = make_npc_sprite(n["body"], n["accent"], n["kind"])
+    return out
 
 # ----------------------------------------------------------------------------
 # Juego
@@ -537,6 +587,19 @@ class Game:
         self.f_med = pygame.font.SysFont(fam, 19, bold=True)
         self.f_big = pygame.font.SysFont(fam, 24, bold=True)
         self.npc_by_id = {n["id"]: n for n in NPCS}
+
+            # --- hospital nuevo ---
+        self.plano = pygame.image.load(res(PLANO_IMG)).convert_alpha()
+        self.colis = pygame.image.load(res(PLANO_COL)).convert()
+        self.salas = {k: pygame.image.load(res(f"assets/sala_{k}.png")).convert() for k in SALAS}
+        self.map_player = load_map_sprites()
+        self.npc_front = load_npc_front()
+        self.room_of_npc = {s["npc"]: k for k, s in SALAS.items()}
+        self.mx, self.my = MAP_START      # posición en el plano
+        self.mdir = "espalda"             # hacia dónde mira en el plano
+        self.sala = None                  # sala en la que estás (None = no estás en ninguna)
+        self.map_back = None              # dónde estabas en el plano antes de entrar a una sala
+        self.lock_door = False            # evita que salga el cartel de la puerta justo al volver
 
     # --- lógica ---
     def zone_at(self, x):
@@ -814,6 +877,343 @@ class Game:
             self._fade_surf.set_alpha(int(255 * self.fade))
             screen.blit(self._fade_surf, (0, 0))
 
+    # ======================================================================
+    # HOSPITAL NUEVO (pega todo esto al final de la clase Game)
+    # ======================================================================
+    def _update_trans(self):
+        """Transiciones con oscurecimiento: entrar al hospital, entrar a una sala y volver al plano."""
+        tr = self.trans
+        tr["t"] += 1
+        ph, t = tr["phase"], tr["t"]
+        kind = tr.get("kind", "hospital")
+        t_out, t_black, t_in = (70, 35, 70) if kind == "hospital" else (25, 10, 25)
+        if ph == "open" and t >= 50:             # la puerta ya se abrió
+            tr["phase"], tr["t"] = "fadeout", 0
+        elif ph == "fadeout":                    # la pantalla se oscurece
+            self.fade = min(1.0, t / t_out)
+            if t >= t_out:
+                self._cambiar_escena(tr)
+                tr["phase"], tr["t"] = "black", 0
+        elif ph == "black":
+            self.fade = 1.0
+            if t >= t_black:
+                tr["phase"], tr["t"] = "fadein", 0
+                if kind == "hospital":
+                    self.show_banner("Recorre los pasillos y entra a cada sala")
+        elif ph == "fadein":
+            self.fade = max(0.0, 1.0 - t / t_in)
+            if t >= t_in:
+                self.trans, self.fade = None, 0.0
+
+    def _cambiar_escena(self, tr):
+        """Se llama cuando la pantalla ya está negra: aquí cambia el escenario."""
+        kind = tr.get("kind", "hospital")
+        if kind == "hospital":                   # de la calle al plano del hospital
+            self.scene = "map"
+            self.mx, self.my = MAP_START
+            self.mdir = "espalda"
+            self.door_open = False
+        elif kind == "sala":                     # del plano a una sala (vista de perfil)
+            self.map_back = (self.mx, self.my, self.mdir)
+            self.sala = tr["sala"]
+            self.scene = "sala"
+            self.px, self.facing = 70.0, 1
+        elif kind == "mapa":                     # de la sala de vuelta al plano
+            self.scene = "map"
+            self.mx, self.my, self.mdir = self.map_back
+            self.sala = None
+            self.lock_door = True
+
+    def update(self, left, right, up=False, down=False):
+        self.t += 1
+        if self.banner_t > 0:
+            self.banner_t -= 1
+        bloqueado = self.trans is not None
+        if bloqueado:
+            self._update_trans()
+        if self.scene == "map":
+            self.update_mapa(left, right, up, down, bloqueado)
+        else:
+            self.update_lado(left, right, bloqueado)
+
+    def _animar(self, moviendose):
+        if moviendose:
+            self.tick += 1
+            if self.tick >= FRAME_TICKS:
+                self.tick = 0
+                self.frame = (self.frame + 1) % 4
+        else:
+            self.tick, self.frame = 0, 0
+
+    def update_lado(self, left, right, bloqueado):
+        """Movimiento de lado: la calle (ext) y las salas."""
+        vx = (SPEED if right else 0) - (SPEED if left else 0)
+        if bloqueado:
+            vx = 0
+            tr = self.trans
+            if tr is not None and tr.get("kind", "hospital") == "hospital" and tr["phase"] in ("open", "fadeout") and self.scene == "ext":
+                target = self.door_cx - SPRITE / 2          # el personaje camina hasta la puerta
+                if abs(target - self.px) > 1.5:
+                    vx = SPEED * 0.8 * (1 if target > self.px else -1)
+        self.px = max(0, min(W - SPRITE, self.px + vx))
+        if vx:
+            self.facing = 1 if vx > 0 else -1
+        self._animar(vx != 0)
+        self.bob += 0.12
+        if self.scene == "sala" and not bloqueado:
+            self._update_sala()
+
+    def _libre(self, x, y):
+        """True si los pies del personaje (en x, y) pisan una zona caminable del plano."""
+        for fx, fy in ((x + 10, y + 26), (x + 21, y + 26), (x + 10, y + 30), (x + 21, y + 30)):
+            if not (0 <= fx < self.colis.get_width() and 0 <= fy < self.colis.get_height()):
+                return False
+            if tuple(self.colis.get_at((int(fx), int(fy))))[:3] == (0, 0, 0):
+                return False
+        return True
+
+    def _puerta_actual(self):
+        """Nombre de la sala si estás parado en una zona de puerta; si no, None."""
+        c = tuple(self.colis.get_at((int(self.mx + 16), int(self.my + 28))))[:3]
+        return DOOR_COLORS.get(c)
+
+    def map_pos(self, npc_id):
+        return SALAS[self.room_of_npc[npc_id]]["map_pos"]
+
+    def cam_mapa(self):
+        cx = int(max(0, min(self.plano.get_width() - W, self.mx + 16 - W / 2)))
+        cy = int(max(0, min(self.plano.get_height() - H, self.my + 16 - 120)))
+        return cx, cy
+
+    def update_mapa(self, left, right, up, down, bloqueado):
+        dx = (1 if right else 0) - (1 if left else 0)
+        dy = (1 if down else 0) - (1 if up else 0)
+        if bloqueado:
+            dx = dy = 0
+        k = 0.707 if (dx and dy) else 1.0               # en diagonal no corre más rápido
+        vx, vy = dx * MAP_SPEED * k, dy * MAP_SPEED * k
+        movio = False
+        if vx and self._libre(self.mx + vx, self.my):   # se mueve por separado en X y en Y
+            self.mx += vx
+            movio = True
+        if vy and self._libre(self.mx, self.my + vy):
+            self.my += vy
+            movio = True
+        if dy:                                          # W = espalda, S = frente, A = izquierda, D = derecha
+            self.mdir = "frente" if dy > 0 else "espalda"
+        elif dx:
+            self.mdir = "derecha" if dx > 0 else "izquierda"
+        self._animar(movio)
+
+        pcx, pcy = self.mx + 16, self.my + 22
+        for n in NPCS:                                  # nombre sobre el stakeholder cuando pasas cerca
+            nx, ny = self.map_pos(n["id"])
+            near = math.hypot(pcx - (nx + 16), pcy - (ny + 22)) < 60
+            self.npc_alpha[n["id"]] += ((1 if near else 0) - self.npc_alpha[n["id"]]) * 0.18
+        for key, c in CONFLICTS.items():                # discusión entre dos stakeholders
+            ax, ay = self.map_pos(c["members"][0])
+            bx, by = self.map_pos(c["members"][1])
+            d = math.hypot(self.mx - (ax + bx) / 2, self.my - (ay + by) / 2)
+            cerca = d < CONFLICT_RADIUS and not self.c_resolved[key]
+            self.c_alpha[key] += ((1 if cerca else 0) - self.c_alpha[key]) * 0.15
+            if cerca and not self.c_shown[key]:
+                self.c_shown[key] = True
+                self.show_banner("Conflicto: " + c["label"])
+        if self._puerta_actual() is None:
+            self.lock_door = False
+
+    def _update_sala(self):
+        info = SALAS[self.sala]
+        n = self.npc_by_id[info["npc"]]
+        near = abs((self.px + SPRITE / 2) - (info["x"] + SPRITE / 2)) < PROX
+        self.npc_alpha[n["id"]] += ((1 if near else 0) - self.npc_alpha[n["id"]]) * 0.18
+        if near and n["id"] not in self.collected:
+            self._recoger(n)
+
+    def _recoger(self, n):
+        self.collected.append(n["id"])
+        self.show_banner(f"{n['name']} — necesidad identificada")
+        for key, c in CONFLICTS.items():                # si ya conoces a los dos, el conflicto se resuelve
+            if not self.c_resolved[key] and all(i in self.collected for i in c["members"]):
+                self.c_resolved[key] = True
+                self.show_banner(c["resolution"])
+        if len(self.collected) == len(NPCS):
+            self.show_banner("¡Recorrido completo! 7 stakeholders identificados")
+
+    # --- dibujo ---
+    def _dibujar_jugador_lado(self, w):
+        img = self.player_frames[self.frame]            # tu dibujo mira a la izquierda; se voltea al ir a la derecha
+        if self.facing == 1:
+            img = pygame.transform.flip(img, True, False)
+        sx = int(self.px)
+        self._shadow(w, sx + SPRITE // 2, GROUND + 1)
+        w.blit(img, (sx, GROUND - FEET))
+
+    def draw_world(self):
+        w = self.world
+        cw = self.chars
+        cw.fill((0, 0, 0, 0))
+        if self.scene == "ext":
+            w.blit(self.bg_ext, (0, 0))
+            self._dibujar_jugador_lado(cw)
+        elif self.scene == "map":
+            cx, cy = self.cam_mapa()
+            w.blit(self.plano, (0, 0), (cx, cy, W, H))
+            lista = []                                  # se dibuja de arriba hacia abajo para que se tapen bien
+            for n in NPCS:
+                nx, ny = self.map_pos(n["id"])
+                lista.append((ny, self.npc_front[n["id"]], nx - cx, ny - cy))
+            lista.append((self.my, self.map_player[self.mdir][self.frame], self.mx - cx, self.my - cy))
+            for _, im, x, y in sorted(lista, key=lambda t: t[0]):
+                cw.blit(im, (int(x), int(y)))
+        else:                                           # sala de perfil
+            w.blit(self.salas[self.sala], (0, 0))
+            info = SALAS[self.sala]
+            img = self.npc_sprites[info["npc"]]
+            if self.px + SPRITE / 2 > info["x"] + SPRITE / 2:
+                img = pygame.transform.flip(img, True, False)
+            bob = int(math.sin(self.t * 0.07 + info["x"]) * 1)
+            self._shadow(cw, info["x"] + SPRITE // 2, GROUND + 1)
+            cw.blit(img, (info["x"], GROUND - FEET + bob))
+            self._dibujar_jugador_lado(cw)
+
+    def bubble(self, screen, cx, bottom, lines, colors, tail=True, border=(240, 180, 41), feet=None):
+        pad = 8
+        fonts = [self.f_med if i == 0 else self.f_small for i in range(len(lines))]
+        ws = [f.size(l)[0] for f, l in zip(fonts, lines)]
+        bw = max(ws) + pad * 2
+        bh = sum(f.get_linesize() for f in fonts) + pad * 2 - 4
+        x = max(8, min(SCREEN_W - bw - 8, cx - bw // 2))
+        y = bottom - bh - 10
+        arriba = True
+        if feet is not None and y < 52:                 # si no cabe arriba, el globo va debajo del personaje
+            y, arriba = feet + 12, False
+        pygame.draw.rect(screen, (24, 16, 18), (x, y, bw, bh), border_radius=6)
+        pygame.draw.rect(screen, border, (x, y, bw, bh), 2, border_radius=6)
+        if tail:
+            tx = max(x + 10, min(x + bw - 10, cx))
+            if arriba:
+                pygame.draw.polygon(screen, (24, 16, 18), [(tx - 6, y + bh - 1), (tx + 6, y + bh - 1), (tx, y + bh + 8)])
+                pygame.draw.line(screen, border, (tx - 6, y + bh), (tx, y + bh + 8), 2)
+                pygame.draw.line(screen, border, (tx + 6, y + bh), (tx, y + bh + 8), 2)
+            else:
+                pygame.draw.polygon(screen, (24, 16, 18), [(tx - 6, y + 1), (tx + 6, y + 1), (tx, y - 8)])
+                pygame.draw.line(screen, border, (tx - 6, y), (tx, y - 8), 2)
+                pygame.draw.line(screen, border, (tx + 6, y), (tx, y - 8), 2)
+        yy = y + pad - 2
+        for f, l, c in zip(fonts, lines, colors):
+            screen.blit(f.render(l, True, c), (x + pad, yy))
+            yy += f.get_linesize()
+
+    def _aviso_e(self, screen, texto):
+        t = self.f_big.render(texto, True, (251, 234, 208))
+        bw, bh = t.get_width() + 36, t.get_height() + 18
+        x, y = (SCREEN_W - bw) // 2, SCREEN_H - 78
+        pygame.draw.rect(screen, (24, 16, 18), (x, y, bw, bh), border_radius=8)
+        pygame.draw.rect(screen, (240, 180, 41), (x, y, bw, bh), 2, border_radius=8)
+        screen.blit(t, (x + 18, y + 9))
+
+    def _globo_stakeholder(self, screen, n, sx, top, feet, en_mapa):
+        conflict = n.get("conflict")
+        if conflict and not self.c_resolved[conflict] and (self.c_alpha[conflict] > 0.5 if en_mapa else self.npc_alpha[n["id"]] > 0.5):
+            # los dos stakeholders "discuten": cada uno con su globo
+            self.bubble(screen, sx, top, [n["says"], n["name"]], [(255, 225, 205), (240, 180, 41)],
+                        border=(220, 90, 90), feet=feet)
+        elif self.npc_alpha[n["id"]] > 0.5:
+            nm = wrap(self.f_med, n["name"], 260)
+            self.bubble(screen, sx, top, nm + [n["role"]], [(251, 234, 208)] * len(nm) + [(240, 180, 41)], feet=feet)
+        elif n["id"] in self.collected:
+            cx, cy = int(sx), int(top - 10)             # marca de "identificado": check verde sobre la cabeza
+            pygame.draw.lines(screen, (95, 190, 110), False, [(cx - 8, cy), (cx - 2, cy + 7), (cx + 9, cy - 8)], 4)
+
+    def draw_ui(self, screen):
+        if self.scene == "ext":
+            self.draw_ui_ext(screen)
+            return
+        if self.scene == "map":
+            cx, cy = self.cam_mapa()
+            for n in NPCS:
+                nx, ny = self.map_pos(n["id"])
+                sx = (nx + 16 - cx) * SCALE
+                top = (ny - cy) * SCALE
+                feet = (ny + 30 - cy) * SCALE
+                if 0 <= sx <= SCREEN_W and 0 <= feet <= SCREEN_H:
+                    self._globo_stakeholder(screen, n, sx, top, feet, True)
+            zona = "Hospital · Pasillos"
+            ayuda = "Flechas  o  W A S D  para moverte"
+        else:
+            info = SALAS[self.sala]
+            n = self.npc_by_id[info["npc"]]
+            self._globo_stakeholder(screen, n, (info["x"] + SPRITE / 2) * SCALE, (GROUND - FEET) * SCALE, None, False)
+            zona = info["name"]
+            ayuda = "Flechas  < >  o  A / D  para moverte"
+
+        # barra superior con el progreso
+        bar = pygame.Surface((SCREEN_W, 46), pygame.SRCALPHA)
+        bar.fill((16, 8, 10, 190))
+        screen.blit(bar, (0, 0))
+        screen.blit(self.f_small.render("DIRESA LA LIBERTAD · IDENTIFICACIÓN DE STAKEHOLDERS", True, (251, 234, 208)), (16, 14))
+        track = pygame.Rect(600, 17, 320, 12)
+        pygame.draw.rect(screen, (70, 62, 62), track, border_radius=6)
+        frac = len(self.collected) / len(NPCS)
+        pygame.draw.rect(screen, (240, 180, 41), (track.x, track.y, int(track.w * frac), track.h), border_radius=6)
+        pygame.draw.rect(screen, (150, 140, 140), track, 1, border_radius=6)
+        zi = self.f_med.render(zona, True, (240, 180, 41))
+        screen.blit(zi, (SCREEN_W - zi.get_width() - 16, 12))
+
+        # panel de requisitos
+        pw, ph = 330, 60 + 24 * max(1, len(self.collected))
+        panel = pygame.Surface((pw, ph), pygame.SRCALPHA)
+        pygame.draw.rect(panel, (20, 12, 10, 190), (0, 0, pw, ph), border_radius=10)
+        pygame.draw.rect(panel, (255, 255, 255, 50), (0, 0, pw, ph), 1, border_radius=10)
+        screen.blit(panel, (SCREEN_W - pw - 14, 56))
+        screen.blit(self.f_small.render("REQUISITOS IDENTIFICADOS", True, (240, 180, 41)), (SCREEN_W - pw, 66))
+        if not self.collected:
+            screen.blit(self.f_small.render("Entra a cada sala y acércate a la persona…", True, (170, 160, 150)), (SCREEN_W - pw, 92))
+        for i, nid in enumerate(self.collected):
+            n = self.npc_by_id[nid]
+            y = 92 + i * 24
+            pygame.draw.rect(screen, (240, 180, 41), (SCREEN_W - pw, y + 1, 3, 17))
+            txt = f"{n['name'].split(' / ')[0]}: {n['need']}"
+            while self.f_small.size(txt)[0] > pw - 24 and len(txt) > 8:
+                txt = txt[:-2]
+            if txt != f"{n['name'].split(' / ')[0]}: {n['need']}":
+                txt = txt.rstrip() + "…"
+            screen.blit(self.f_small.render(txt, True, (255, 248, 236)), (SCREEN_W - pw + 10, y))
+
+        # aviso central
+        if self.banner_t > 0:
+            al = min(1.0, self.banner_t / 30)
+            t = self.f_big.render(self.banner, True, (251, 234, 208))
+            bw, bh = t.get_width() + 32, t.get_height() + 16
+            b = pygame.Surface((bw, bh), pygame.SRCALPHA)
+            pygame.draw.rect(b, (20, 12, 10, int(220 * al)), (0, 0, bw, bh), border_radius=8)
+            pygame.draw.rect(b, (240, 180, 41, int(255 * al)), (0, 0, bw, bh), 2, border_radius=8)
+            t.set_alpha(int(255 * al))
+            b.blit(t, (16, 8))
+            screen.blit(b, ((SCREEN_W - bw) // 2 - 80, 60))
+
+        # cartel "Presione E"
+        if self.trans is None:
+            if self.scene == "map" and not self.lock_door and self._puerta_actual():
+                self._aviso_e(screen, "Presione E para entrar")
+            elif self.scene == "sala" and self.px < 34:
+                self._aviso_e(screen, "Presione E para salir")
+        screen.blit(self.f_small.render(ayuda, True, (255, 248, 236)), (16, SCREEN_H - 28))
+
+    def press_e(self):
+        """Tecla E: entrar al hospital, entrar a una sala o salir de ella."""
+        if self.trans is not None:
+            return
+        if self.scene == "ext" and self.near_door():
+            self.trans = dict(kind="hospital", phase="open", t=0)
+            self.door_open = True
+        elif self.scene == "map" and not self.lock_door:
+            sala = self._puerta_actual()
+            if sala:
+                self.trans = dict(kind="sala", phase="fadeout", t=0, sala=sala)
+        elif self.scene == "sala" and self.px < 34:
+            self.trans = dict(kind="mapa", phase="fadeout", t=0)
 
 def main():
     pygame.init()
@@ -835,7 +1235,7 @@ def main():
                 elif e.key == pygame.K_e:
                     game.press_e()
         k = pygame.key.get_pressed()
-        game.update(k[pygame.K_LEFT] or k[pygame.K_a], k[pygame.K_RIGHT] or k[pygame.K_d])
+        game.update(k[pygame.K_LEFT] or k[pygame.K_a], k[pygame.K_RIGHT] or k[pygame.K_d], k[pygame.K_UP] or k[pygame.K_w], k[pygame.K_DOWN] or k[pygame.K_s])        
         game.render(screen)
         pygame.display.flip()
         clock.tick(60)
