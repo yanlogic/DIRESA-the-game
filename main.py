@@ -16,7 +16,9 @@ SPEED = 1.5              # velocidad de caminata
 PROX = 70                # distancia para "identificar" a un stakeholder
 CONFLICT_PAD = 45
 FRAME_TICKS = 8          # cada cuántos fotogramas cambia el cuadro de caminata
-SPRITE = 32
+CHAR_SCALE = 1.50           # 1 = original, 2 = doble
+SPRITE = int(32 * CHAR_SCALE)
+FEET = int(30 * CHAR_SCALE)
 HOSPITAL_CLOSED = "assets/hospital_cerrado.png"   # tu hospital con la puerta cerrada
 HOSPITAL_OPEN = "assets/hospital_abierto.png"     # el mismo hospital con la puerta abierta
 HOSPITAL_SCALE = 2       # ampliación del hospital: 1, 2 o 3 (números enteros = píxeles nítidos)
@@ -449,12 +451,16 @@ def make_npc_sprite(body, accent, kind):
         box(s, (200, 60, 70), 15, 18, 3, 3)
     return s
 
+def grow(im):
+    if CHAR_SCALE == 1:
+        return im
+    return pygame.transform.scale(im, (int(im.get_width() * CHAR_SCALE), int(im.get_height() * CHAR_SCALE)))
 
 def load_player_frames():
     frames = []
     for i in range(1, 5):
         im = pygame.image.load(res(f"assets/jugador_{i}.png")).convert_alpha()
-        frames.append(im)
+        frames.append(grow(im))
     return frames
 
 
@@ -463,9 +469,9 @@ def load_npc_sprites():
     for n in NPCS:
         p = res(f"assets/npc_{n['id']}.png")
         if os.path.exists(p):
-            out[n["id"]] = pygame.image.load(p).convert_alpha()
+            out[n["id"]] = grow(pygame.image.load(p).convert_alpha())
         else:
-            out[n["id"]] = make_npc_sprite(n["body"], n["accent"], n["kind"])
+            out[n["id"]] = grow(make_npc_sprite(n["body"], n["accent"], n["kind"]))
     return out
 
 
@@ -653,7 +659,7 @@ class Game:
                 img = pygame.transform.flip(img, True, False)
             bob = int(math.sin(self.t * 0.07 + n["x"]) * 1)
             sx = int(n["x"] - cam - SPRITE / 2)
-            sy = GROUND - 30 + bob
+            sy = GROUND - FEET + bob
             self._shadow(w, sx + SPRITE // 2, GROUND + 1)
             w.blit(img, (sx, sy))
 
@@ -663,13 +669,14 @@ class Game:
             img = pygame.transform.flip(img, True, False)
         sx = int(self.px - cam)
         self._shadow(w, sx + SPRITE // 2, GROUND + 1)
-        w.blit(img, (sx, GROUND - 30))
+        w.blit(img, (sx, GROUND - FEET))
 
     @staticmethod
     def _shadow(w, cx, y):
-        sh = pygame.Surface((22, 6), pygame.SRCALPHA)
-        pygame.draw.ellipse(sh, (0, 0, 0, 60), (0, 0, 22, 6))
-        w.blit(sh, (cx - 11, y - 3))
+        sw, sh_h = int(22 * CHAR_SCALE), int(6 * CHAR_SCALE)
+        sh = pygame.Surface((sw, sh_h), pygame.SRCALPHA)
+        pygame.draw.ellipse(sh, (0, 0, 0, 60), (0, 0, sw, sh_h))
+        w.blit(sh, (cx - sw // 2, y - sh_h // 2))
 
     def bubble(self, screen, cx, bottom, lines, colors, tail=True, border=(240, 180, 41)):
         pad = 8
@@ -718,7 +725,7 @@ class Game:
         # etiquetas / globos de los personajes
         for n in NPCS:
             sx = (n["x"] - cam) * SCALE
-            top = (GROUND - 30) * SCALE
+            top = (GROUND - FEET) * SCALE
             conflict = n.get("conflict")
             if conflict and not self.c_resolved[conflict] and self.c_alpha[conflict] > 0.5:
                 # los dos personajes "discuten": cada uno con su globo
