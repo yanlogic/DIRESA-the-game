@@ -7,7 +7,7 @@ bajo el enfoque RUP.
 El jugador camina hasta la puerta del hospital, presiona E para entrar y recorre las áreas
 internas (Admisión, Triaje, Consultorio, Farmacia y Dirección·DIRESA). En cada una conversa
 con los stakeholders para conocer su rol y sus necesidades, y observa cómo se resuelven dos
-conflictos entre ellos. Todo el arte (personaje y hospital) es pixel art propio.
+conflictos entre ellos. 
 
 ## Controles
 - Flechas o A / D: moverse
