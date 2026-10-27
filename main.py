@@ -467,9 +467,14 @@ def load_player_frames():
 def load_npc_sprites():
     out = {}
     for n in NPCS:
-        p = res(f"assets/npc_{n['id']}.png")
-        if os.path.exists(p):
-            out[n["id"]] = grow(pygame.image.load(p).convert_alpha())
+        found = None
+        for nombre in (f"npc_{n['id']}_izquierda.png", f"npc_{n['id']}.png"):
+            p = res("assets/" + nombre)
+            if os.path.exists(p):
+                found = p
+                break
+        if found:
+            out[n["id"]] = grow(pygame.image.load(found).convert_alpha())
         else:
             out[n["id"]] = grow(make_npc_sprite(n["body"], n["accent"], n["kind"]))
     return out
