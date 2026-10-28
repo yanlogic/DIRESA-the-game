@@ -44,39 +44,49 @@ ZONES = [
 ]
 
 # kind: aspecto del muñequito de prueba (hasta que tengas su PNG)
+# poder / interes / cuadrante: Tabla 6 del informe (2.4 Matriz de poder/interés)
+# actividad: lo que hace el personaje en el hospital (baila, signos, pasea, teclea, inspecciona, acomoda, telefono)
+# need y says se guardan para los capítulos de requisitos y conflictos
 NPCS = [
-    dict(id="patroclo",   x=300,  name="Sr. Patroclo Suarez",   role="Paciente",
-         need="Atención sin errores de transcripción",
-         body=(68, 114, 168), accent=(44, 79, 120), kind="normal"),
-    dict(id="sara",       x=840,  name="Sra. Sara Acuy",        role="Enfermera (Triaje)",
-         need="Registro rápido de signos vitales",
-         body=(47, 158, 143), accent=(30, 106, 96), kind="nurse"),
-    dict(id="jeremy",     x=1330, name="Dr. Jeremy Armas",      role="Médico General",
-         need="Rapidez: atender en 5 clics o menos",
-         body=(238, 241, 241), accent=(154, 167, 167), kind="doctor", conflict="c1",
-         says="¡Necesito atender rápido, en 5 clics!"),
-    dict(id="admin",      x=1560, name="Administración / MINSA", role="Equipo TI y regulador",
+    dict(id="diresa",   x=2760, name="DIRESA La Libertad", role="Patrocinador del proyecto",
+         poder="Alto", interes="Alto", cuadrante="Gestionar de cerca", actividad="telefono",
+         need="Decide qué módulos se priorizan",
+         body=(122, 34, 48), accent=(75, 22, 32), kind="suit"),
+    dict(id="admin",    x=1560, name="Equipo de TI / Administración", role="Administración de sistemas",
+         poder="Alto", interes="Alto", cuadrante="Gestionar de cerca", actividad="teclea",
          need="Trazabilidad legal (NTS 139)",
          body=(92, 92, 110), accent=(54, 54, 63), kind="suit", conflict="c1",
          says="¡Todo cambio debe quedar registrado!"),
-    dict(id="farmacia",   x=1980, name="Técnico de Farmacia",   role="Dispensación",
+    dict(id="minsa",    x=2400, name="MINSA", role="Órgano rector (NTS 139)",
+         poder="Alto", interes="Medio", cuadrante="Mantener satisfecho", actividad="inspecciona",
+         need="Cumplimiento de la NTS 139",
+         body=(44, 92, 128), accent=(28, 58, 84), kind="suit"),
+    dict(id="jeremy",   x=1330, name="Dr. Jeremy Armas", role="Médico General",
+         poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="pasea",
+         need="Rapidez: atender en 5 clics o menos",
+         body=(238, 241, 241), accent=(154, 167, 167), kind="doctor", conflict="c1",
+         says="¡Necesito atender rápido, en 5 clics!"),
+    dict(id="sara",     x=840,  name="Sra. Sara Acuy", role="Enfermería (Triaje)",
+         poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="signos",
+         need="Registro rápido de signos vitales",
+         body=(47, 158, 143), accent=(30, 106, 96), kind="nurse"),
+    dict(id="farmacia", x=1980, name="Técnico de Farmacia", role="Dispensación de recetas",
+         poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="acomoda",
          need="Control estricto del kárdex",
          body=(79, 143, 63), accent=(47, 92, 38), kind="apron", conflict="c2",
          says="¡Cada salida debe ir al kárdex!"),
-    dict(id="pacientes2", x=2200, name="Pacientes y médicos",   role="Usuarios de farmacia",
-         need="Despacho sin colas",
-         body=(168, 106, 158), accent=(111, 65, 102), kind="normal", conflict="c2",
+    dict(id="patroclo", x=300,  name="Sr. Patroclo Suarez", role="Paciente",
+         poder="Bajo", interes="Bajo", cuadrante="Monitorear", actividad="baila",
+         need="Atención sin errores de transcripción",
+         body=(68, 114, 168), accent=(44, 79, 120), kind="normal", conflict="c2",
          says="¡No queremos hacer cola!"),
-    dict(id="diresa",     x=2760, name="DIRESA La Libertad",    role="Patrocinador (alto poder/interés)",
-         need="Decide qué módulos se priorizan",
-         body=(122, 34, 48), accent=(75, 22, 32), kind="suit"),
 ]
 
 CONFLICTS = {
     "c1": dict(members=("jeremy", "admin"),
                label="Médicos vs. Administración/MINSA",
                resolution="Resuelto: Inmutabilidad + Adenda Ágil (4.85/5, consenso)"),
-    "c2": dict(members=("farmacia", "pacientes2"),
+    "c2": dict(members=("farmacia", "patroclo"),
                label="Farmacia vs. Pacientes/Médicos",
                resolution="Resuelto: Cola virtual, despacho en 1 clic (4.80/5, consenso)"),
 }
@@ -104,15 +114,25 @@ DOOR_COLORS = {
 # cada sala: nombre, stakeholder que vive ahí, dónde está parado en el plano (map_pos)
 # y dónde está parado dentro de la sala de perfil (x)
 SALAS = {
-    "admision":    dict(name="Admisión",              npc="patroclo",   map_pos=(64, 434),  x=284),
-    "triaje":      dict(name="Triaje",                npc="sara",       map_pos=(236, 256), x=236),
-    "consultorio": dict(name="Consultorio",           npc="jeremy",     map_pos=(266, 64),  x=222),
-    "admin":       dict(name="Administración / MINSA", npc="admin",     map_pos=(84, 60),   x=176),
-    "farmacia":    dict(name="Farmacia",              npc="farmacia",   map_pos=(560, 266), x=286),
-    "espera":      dict(name="Sala de espera",        npc="pacientes2", map_pos=(556, 476), x=258),
-    "direccion":   dict(name="Dirección · DIRESA",    npc="diresa",     map_pos=(444, 44),  x=228),
+    "admision":    dict(name="Admisión",              npc="minsa",    map_pos=(64, 434),  x=284),
+    "triaje":      dict(name="Triaje",                npc="sara",     map_pos=(236, 256), x=236),
+    "consultorio": dict(name="Consultorio",           npc="jeremy",   map_pos=(266, 64),  x=222),
+    "admin":       dict(name="Administración · TI",   npc="admin",    map_pos=(84, 60),   x=176),
+    "farmacia":    dict(name="Farmacia",              npc="farmacia", map_pos=(560, 266), x=286),
+    "espera":      dict(name="Sala de espera",        npc="patroclo", map_pos=(556, 476), x=258),
+    "direccion":   dict(name="Dirección · DIRESA",    npc="diresa",   map_pos=(444, 44),  x=228),
 }
 
+# ----------------------------------------------------------------------------
+# CAPÍTULOS (se eligen en el buzón que está a la izquierda del hospital)
+# ----------------------------------------------------------------------------
+CAPITULOS = [
+    dict(titulo="Conociendo a los stakeholders", mision="Conoce a los 7 stakeholders",
+         logro="Conociendo a los stakeholders"),
+    dict(titulo="Requisitos de cada stakeholder", mision="Próximamente", logro=None),
+]
+BUZON_X = 76                         # dónde está el buzón en la calle (centro, en píxeles internos)
+SALIDA_MAPA = (268, 550, 356, 560)   # zona de la puerta de entrada en el plano (x1, y1, x2, y2) para salir a la calle
 
 # ----------------------------------------------------------------------------
 # Utilidades de dibujo pixel art
@@ -830,6 +850,75 @@ def ui_tecla(s, x, y, letra, abajo=False):
     return w
 
 
+# --- iconos extra: logro, candado y colores de la matriz poder/interés ---
+ICONO_TROFEO = ["LLLLLLLLL", "LYYYYYYYL", "LYWYYYYYL", "LLYYYYYLL", ".LYYYYYL.", "..LYYYL..", "...LYL...", "..LLYLL..", ".LYYYYYL.", ".LLLLLLL."]
+PAL_TROFEO = {"L": (110, 66, 16), "Y": (255, 200, 60), "W": (255, 246, 190)}
+ICONO_CANDADO = ["..LLL..", ".L...L.", ".L...L.", "LLLLLLL", "LGGGGGL", "LGGLGGL", "LGGLGGL", "LLLLLLL"]
+PAL_CANDADO = {"L": UI_LINEA, "G": (150, 154, 170)}
+COLOR_CUADRANTE = {"Gestionar de cerca": (255, 130, 115), "Mantener satisfecho": (255, 196, 90),
+                   "Mantener informado": (120, 200, 255), "Monitorear": (160, 210, 160)}
+NIVEL = {"Bajo": 1, "Medio": 2, "Alto": 3}
+
+
+def ui_medidor(s, x, y, nivel):
+    """3 barritas: cuántas están llenas según Bajo / Medio / Alto. Devuelve su ancho."""
+    for i in range(3):
+        ui_rect(s, UI_LINEA, x + i * 4, y, 4, 8)
+        ui_rect(s, UI_ORO if i < NIVEL.get(nivel, 0) else (52, 64, 98), x + i * 4 + 1, y + 1, 2, 6)
+    return 13
+
+
+# --- partículas de los stakeholders (cada "X" es un píxel) ---
+P_NOTA = ["..XX.", "..X.X", "..X..", "..X..", ".XX..", "XXX..", ".X..."]
+P_CORAZON = ["XX.XX", "XXXXX", ".XXX.", "..X.."]
+P_GOTA = [".X.", "XXX", "XXX", ".X."]
+P_CHECK = ["....X", "...X.", "X.X..", ".X..."]
+P_CERO = ["XXX", "X.X", "X.X", "X.X", "XXX"]
+P_UNO = [".X.", "XX.", ".X.", ".X.", "XXX"]
+P_PASTILLA = ["AABB"]
+
+
+def px_icono(s, x, y, filas, color, esc=1, color_b=None):
+    """Dibuja un iconito de partículas con sombrita. 'A' usa color, 'B' usa color_b, 'X' usa color."""
+    for j, fila in enumerate(filas):
+        for i, ch in enumerate(fila):
+            if ch in "XAB":
+                c = color_b if (ch == "B" and color_b) else color
+                ui_rect(s, (24, 24, 36), int(x) + i * esc + esc, int(y) + j * esc + esc, esc, esc)
+                ui_rect(s, c, int(x) + i * esc, int(y) + j * esc, esc, esc)
+
+
+def dibujar_buzon(s, x, base, t, nuevo):
+    """Buzón pixel art (x = centro, base = suelo). Si hay capítulo nuevo, la banderita sube y sale un '!'."""
+    x, base = int(x), int(base)
+    ui_rect(s, (0, 0, 0, 60), x - 7, base - 1, 14, 3)                    # sombra en el suelo
+    ui_rect(s, UI_LINEA, x - 2, base - 16, 4, 16)                         # poste
+    ui_rect(s, (120, 96, 72), x - 1, base - 16, 2, 16)
+    bx, by = x - 8, base - 29
+    ui_rect(s, UI_LINEA, bx + 1, by, 14, 14)                              # caja (esquinas cortadas)
+    ui_rect(s, UI_LINEA, bx, by + 1, 16, 12)
+    ui_rect(s, (206, 58, 58), bx + 1, by + 1, 14, 12)
+    ui_rect(s, (236, 96, 90), bx + 2, by + 1, 12, 2)                      # brillo de arriba
+    ui_rect(s, (150, 36, 40), bx + 1, by + 11, 14, 2)                     # sombra de abajo
+    ui_rect(s, UI_LINEA, bx + 4, by + 4, 8, 2)                            # ranura de las cartas
+    ui_rect(s, (250, 246, 236), bx + 4, by + 7, 8, 4)                     # sobrecito blanco
+    s.set_at((bx + 5, by + 8), (190, 60, 60))
+    s.set_at((bx + 10, by + 8), (190, 60, 60))
+    ui_rect(s, (190, 60, 60), bx + 6, by + 9, 4, 1)
+    if nuevo:                                                             # banderita levantada
+        ui_rect(s, UI_LINEA, bx + 16, by - 6, 2, 14)
+        ui_rect(s, UI_LINEA, bx + 17, by - 7, 6, 6)
+        ui_rect(s, (255, 214, 64), bx + 18, by - 6, 4, 4)
+        dy = int(math.sin(t * 0.15) * 2)                                  # "!" que flota arriba
+        ui_rect(s, UI_LINEA, x - 3, by - 16 + dy, 7, 12)
+        ui_rect(s, (255, 214, 64), x - 2, by - 15 + dy, 5, 10)
+        ui_rect(s, UI_LINEA, x, by - 14 + dy, 1, 5)
+        ui_rect(s, UI_LINEA, x, by - 8 + dy, 1, 2)
+    else:                                                                 # banderita abajo
+        ui_rect(s, UI_LINEA, bx + 15, by + 5, 7, 3)
+        ui_rect(s, (220, 190, 60), bx + 16, by + 6, 5, 1)
+# ======================== FIN DEL BLOQUE B ========================
+
 # ----------------------------------------------------------------------------
 # Juego
 # ----------------------------------------------------------------------------
@@ -1516,20 +1605,243 @@ class Game:
             self.trans = dict(kind="mapa", phase="fadeout", t=0)
 
     # ======================================================================
-    # INTERFAZ PIXEL ART (pega todo esto al final de la clase Game, después de press_e)
+    # INTERFAZ PIXEL ART + CAPÍTULO 1 (pega todo esto al final de la clase Game)
     # ======================================================================
+    menu = None              # menú del buzón: None = cerrado, si no {"sel": capítulo elegido}
+
     def _ui_init(self):
-        """Prepara la capa de interfaz y las caritas. Se llama sola la primera vez."""
+        """Prepara la interfaz, las caritas y el estado de los capítulos. Se llama sola la primera vez."""
         if hasattr(self, "ui"):
             return
         self.ui = pygame.Surface((W, H), pygame.SRCALPHA)       # capa de la interfaz (384x216)
-        self.panel_visible = True                               # TAB muestra / oculta el panel de requisitos
+        self.panel_visible = True                               # TAB muestra / oculta el panel
         self.caras, self.siluetas = {}, {}
         for n in NPCS:
             cara = self.npc_front[n["id"]].subsurface((8, 1, 16, 14)).copy()   # solo la cabeza
             self.caras[n["id"]] = cara
             self.siluetas[n["id"]] = pygame.mask.from_surface(cara).to_surface(
                 setcolor=(44, 58, 94, 255), unsetcolor=(0, 0, 0, 0))
+        self._fase = {n["id"]: i * 53 for i, n in enumerate(NPCS)}   # para que no se muevan todos igual
+        self._sombra_mapa = pygame.Surface((14, 4), pygame.SRCALPHA)
+        pygame.draw.ellipse(self._sombra_mapa, (0, 0, 0, 60), (0, 0, 14, 4))
+        # --- capítulos ---
+        self.capitulo = 1                 # capítulo que estás jugando
+        self.desbloqueados = 1            # cuántos capítulos se pueden elegir en el buzón
+        self.logros = []                  # logros ya obtenidos
+        self.logro_txt, self.logro_t = "", 0
+        self.buzon_nuevo = False          # True = el buzón tiene algo nuevo (banderita arriba)
+        self._apagar_conflictos()
+
+    def _apagar_conflictos(self):
+        """En el Capítulo 1 no hay conflictos: se marcan como 'ya vistos' para que no aparezcan."""
+        for k in CONFLICTS:
+            self.c_resolved[k] = True
+            self.c_shown[k] = True
+            self.c_alpha[k] = 0.0
+
+    # --- capítulos, buzón, logro y salida ------------------------------------
+    def _recoger(self, n):
+        """Conoces a un stakeholder. Al conocer a los 7 se gana el logro del Capítulo 1."""
+        self.collected.append(n["id"])
+        self.show_banner(f"{n['name']}: stakeholder identificado")
+        if len(self.collected) == len(NPCS) and self.capitulo == 1:
+            self._logro(CAPITULOS[0]["logro"])
+            self.desbloqueados = max(self.desbloqueados, 2)
+            self.buzon_nuevo = True
+            self.show_banner("¡Misión cumplida! Sal del hospital y revisa el buzón")
+
+    def _logro(self, texto):
+        if texto and texto not in self.logros:              # cada logro sale una sola vez
+            self.logros.append(texto)
+            self.logro_txt, self.logro_t = texto, 300
+
+    def cerca_buzon(self):
+        return self.scene == "ext" and abs(self.px + SPRITE / 2 - BUZON_X) < 22
+
+    def en_salida(self):
+        """True si en el plano estás parado en la puerta de entrada (para salir a la calle)."""
+        x1, y1, x2, y2 = SALIDA_MAPA
+        fx, fy = self.mx + 16, self.my + 30
+        return self.scene == "map" and x1 <= fx <= x2 and y1 <= fy <= y2
+
+    def tecla(self, key):
+        """Todas las teclas que se presionan una vez. Devuelve 'salir' para cerrar el juego."""
+        self._ui_init()
+        if self.menu is not None:                           # con el menú del buzón abierto
+            libres = self.desbloqueados
+            if key in (pygame.K_UP, pygame.K_w):
+                self.menu["sel"] = (self.menu["sel"] - 1) % libres
+            elif key in (pygame.K_DOWN, pygame.K_s):
+                self.menu["sel"] = (self.menu["sel"] + 1) % libres
+            elif key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE):
+                self._elegir_capitulo()
+            elif key == pygame.K_ESCAPE:
+                self.menu = None
+            return None
+        if key == pygame.K_ESCAPE:
+            return "salir"
+        if key == pygame.K_TAB:
+            self.panel_visible = not self.panel_visible
+        elif key == pygame.K_e and self.trans is None:
+            if self.cerca_buzon():
+                self._abrir_buzon()
+            elif self.en_salida():
+                self.trans = dict(kind="calle", phase="fadeout", t=0)
+            else:
+                self.press_e()
+        return None
+
+    def _abrir_buzon(self):
+        if self.desbloqueados < 2:                          # al inicio el buzón no deja hacer nada
+            self.show_banner("El buzón está vacío: termina primero el Capítulo 1")
+            return
+        self.menu = dict(sel=min(self.capitulo, self.desbloqueados) - 1)
+        self.buzon_nuevo = False
+
+    def _elegir_capitulo(self):
+        sel = self.menu["sel"]
+        self.menu = None
+        if sel == 0:                                        # Capítulo 1: se vuelve a jugar desde cero
+            self.capitulo = 1
+            self.collected = []
+            for k in self.npc_alpha:
+                self.npc_alpha[k] = 0.0
+            self._apagar_conflictos()
+            self.show_banner("Capítulo 1: " + CAPITULOS[0]["titulo"])
+        else:                                               # los demás capítulos aún no están hechos
+            self.show_banner(f"Capítulo {sel + 1}: ¡Próximamente!")
+
+    def _cambiar_escena(self, tr):
+        """Se llama cuando la pantalla ya está negra: aquí cambia el escenario."""
+        kind = tr.get("kind", "hospital")
+        if kind == "hospital":                   # de la calle al plano del hospital
+            self.scene = "map"
+            self.mx, self.my = MAP_START
+            self.mdir = "espalda"
+            self.door_open = False
+        elif kind == "sala":                     # del plano a una sala (vista de perfil)
+            self.map_back = (self.mx, self.my, self.mdir)
+            self.sala = tr["sala"]
+            self.scene = "sala"
+            self.px, self.facing = 70.0, 1
+        elif kind == "mapa":                     # de la sala de vuelta al plano
+            self.scene = "map"
+            self.mx, self.my, self.mdir = self.map_back
+            self.sala = None
+            self.lock_door = True
+        elif kind == "calle":                    # del plano de vuelta a la calle (frente a la puerta)
+            self.scene = "ext"
+            self.px, self.facing = self.door_cx - SPRITE / 2, -1
+            self.door_open = False
+            self.frame = 0
+
+    # --- los stakeholders hacen algo -----------------------------------------
+    def _pose(self, n):
+        """Movimiento según la actividad: (dx, dy, voltear). En píxeles del plano.
+        voltear = None significa 'que mire hacia ti' (en las salas)."""
+        t = self.t + self._fase.get(n["id"], 0)
+        act = n.get("actividad", "")
+        if act == "baila":                                  # salta al ritmo y cambia de lado
+            return int(math.sin(t * 0.105) * 2), -int(abs(math.sin(t * 0.21)) * 3), (t // 30) % 2 == 1
+        if act == "pasea":                                  # camina de un lado a otro
+            p = (t % 240) / 240
+            tri = p * 2 if p < 0.5 else 2 - p * 2
+            return int((tri - 0.5) * 20), -((t // 8) % 2), p < 0.5
+        if act == "teclea":                                 # tiembla un poquito, como tecleando
+            return 0, -((t // 5) % 2), None
+        if act == "signos":                                 # mira al paciente y luego al monitor
+            return 0, -int(abs(math.sin(t * 0.05)) * 1.5), (t // 120) % 2 == 1
+        if act == "inspecciona":                            # mira a un lado y al otro
+            mira = (t // 50) % 2 == 1
+            return (2 if mira else -2), 0, mira
+        if act == "acomoda":                                # va de lado a lado acomodando cajitas
+            return int(math.sin(t * 0.04) * 4), (-1 if t % 60 < 8 else 0), math.cos(t * 0.04) > 0
+        if act == "telefono":                               # habla por teléfono
+            return 0, -int(abs(math.sin(t * 0.06)) * 1.5), None
+        return 0, int(math.sin(t * 0.07)), None
+
+    def _particulas(self, s, n, cx, top, esc):
+        """Partículas alrededor de cada stakeholder. cx = centro, top = arriba del dibujo, esc = 1 plano / 2 sala."""
+        t = self.t + self._fase.get(n["id"], 0)
+        act = n.get("actividad", "")
+        if act == "baila":                                  # notas musicales de colores
+            colores = ((255, 214, 64), (120, 220, 255), (255, 130, 200))
+            for k in range(3):
+                p = (t + k * 22) % 66
+                x = cx + (k - 1) * 10 * esc + math.sin(p * 0.15 + k) * 3 * esc
+                px_icono(s, x - 2 * esc, top + 6 * esc - p * 0.45 * esc, P_NOTA, colores[k], esc)
+        elif act == "signos":                               # corazoncitos (signos vitales)
+            p = t % 50
+            if p < 40:
+                px_icono(s, cx + 8 * esc, top + 4 * esc - p * 0.35 * esc, P_CORAZON, (230, 60, 80), esc)
+        elif act == "pasea":                                # gotitas de sudor (anda apurado)
+            p = t % 70
+            if p < 30:
+                px_icono(s, cx + 7 * esc, top + 3 * esc + p * 0.2 * esc, P_GOTA, (120, 200, 255), esc)
+        elif act == "teclea":                               # ceros y unos
+            for k in range(2):
+                p = (t + k * 25) % 50
+                g = P_UNO if ((t + k * 25) // 50 + k) % 2 else P_CERO
+                px_icono(s, cx + (-9 + k * 15) * esc, top + 6 * esc - p * 0.4 * esc, g, (110, 230, 130), esc)
+        elif act == "inspecciona":                          # checks verdes (revisa que todo cumpla)
+            p = t % 60
+            if p < 45:
+                px_icono(s, cx + 9 * esc, top + 2 * esc - p * 0.3 * esc, P_CHECK, (110, 220, 120), esc)
+        elif act == "acomoda":                              # pastillitas que salta y atrapa
+            for k in range(2):
+                p = (t + k * 30) % 60
+                x = cx + (-7 + k * 10) * esc + (p * 0.12 if k else -p * 0.12) * esc
+                y = top + 16 * esc - (p * 1.1 - p * p * 0.02) * esc
+                px_icono(s, x, y, P_PASTILLA, (250, 250, 250), esc, (230, 80, 80) if k else (90, 150, 240))
+        elif act == "telefono":                             # globito con puntos: "..."
+            puntos = (t // 18) % 4
+            bx, by = int(cx + 8 * esc), int(top - 3 * esc)
+            ui_rect(s, UI_LINEA, bx, by, 13 * esc, 7 * esc)
+            ui_rect(s, (250, 250, 250), bx + esc, by + esc, 11 * esc, 5 * esc)
+            ui_rect(s, UI_LINEA, bx + esc, by + 7 * esc, 2 * esc, esc)
+            for k in range(puntos):
+                ui_rect(s, UI_LINEA, bx + (3 + k * 3) * esc, by + 3 * esc, esc, esc)
+
+    def draw_world(self):
+        w, cw = self.world, self.chars
+        cw.fill((0, 0, 0, 0))
+        if self.scene == "ext":
+            w.blit(self.bg_ext, (0, 0))
+            dibujar_buzon(cw, BUZON_X, GROUND + 1, self.t, self.buzon_nuevo)
+            self._dibujar_jugador_lado(cw)
+        elif self.scene == "map":
+            cx, cy = self.cam_mapa()
+            w.blit(self.plano, (0, 0), (cx, cy, W, H))
+            lista = []                                  # se dibuja de arriba hacia abajo para que se tapen bien
+            for n in NPCS:
+                nx, ny = self.map_pos(n["id"])
+                dx, dy, voltear = self._pose(n)
+                im = self.npc_front[n["id"]]
+                if voltear:
+                    im = pygame.transform.flip(im, True, False)
+                lista.append((ny, n, im, nx - cx + dx, ny - cy, dy))
+            lista.append((self.my, None, self.map_player[self.mdir][self.frame], self.mx - cx, self.my - cy, 0))
+            for _, n, im, x, y, dy in sorted(lista, key=lambda e: e[0]):
+                cw.blit(self._sombra_mapa, (int(x) + 9, int(y) + 29))
+                cw.blit(im, (int(x), int(y) + dy))
+            for _, n, im, x, y, dy in lista:
+                if n is not None:
+                    self._particulas(cw, n, x + 16, y + dy, 1)
+        else:                                           # sala de perfil
+            w.blit(self.salas[self.sala], (0, 0))
+            info = SALAS[self.sala]
+            n = self.npc_by_id[info["npc"]]
+            dx, dy, voltear = self._pose(n)
+            if voltear is None:                         # mira hacia ti
+                voltear = self.px + SPRITE / 2 > info["x"] + SPRITE / 2
+            img = self.npc_sprites[n["id"]]
+            if voltear:
+                img = pygame.transform.flip(img, True, False)
+            x = info["x"] + dx * 2
+            self._shadow(cw, x + SPRITE // 2, GROUND + 1)
+            cw.blit(img, (x, GROUND - FEET + dy * 2))
+            self._particulas(cw, n, x + SPRITE // 2, GROUND - FEET + dy * 2, 2)
+            self._dibujar_jugador_lado(cw)
 
     # --- barra superior ---------------------------------------------------
     def _ui_barra(self, s, zona):
@@ -1561,32 +1873,27 @@ class Game:
             s.blit(self.caras[n["id"]] if ok else self.siluetas[n["id"]], (x + 2, 3))
         s.blit(cont, (W - 6 - cont.get_width(), 5))
 
-    # --- panel de requisitos ----------------------------------------------
+    # --- panel de stakeholders (poder / interés) -----------------------------
     def _ui_panel(self, s):
         if not self.panel_visible:
             return
-        w, tx = 158, 25                                         # ancho del panel y dónde empieza el texto
+        w, tx = 162, 25                                         # ancho del panel y dónde empieza el texto
         ancho_txt = w - tx - 6
-        ultimos = self.collected[-4:]                           # se muestran los 4 más recientes
-        filas = []
-        for nid in ultimos:
-            n = self.npc_by_id[nid]
-            nombre = ui_cortar(n["name"].split(" / ")[0], ancho_txt)
-            filas.append((nid, nombre, ui_partir(n["need"], ancho_txt)[:2]))
-        alto = 16 + 4
+        cuantos = 1 if self.scene == "sala" else 3              # en las salas solo el último (para no tapar a nadie)
+        ultimos = self.collected[-cuantos:]                     # se muestran los más recientes
+        alto = 20
         if not self.collected:
-            hint = ui_partir("Entra a cada sala y acércate a la persona", w - 14)
+            hint = ui_partir("Entra a cada sala y conoce a la persona", w - 14)
             alto += 10 * len(hint) + 4
         else:
             if len(self.collected) > len(ultimos):
                 alto += 10
-            for _, _, lin in filas:
-                alto += max(16, 10 + 10 * len(lin)) + 5
+            alto += 35 * len(ultimos)
         x, y = W - w - 4, 28
         ui_marco(s, x, y, w, alto)
         ui_rect(s, UI_FONDO2, x + 3, y + 3, w - 6, 13)          # franja del título
         ui_rect(s, UI_ORO_OSC, x + 3, y + 16, w - 6, 1)
-        s.blit(ui_texto("REQUISITOS", UI_ORO), (x + 8, y + 3))
+        s.blit(ui_texto("STAKEHOLDERS", UI_ORO), (x + 8, y + 3))
         num = ui_texto(f"{len(self.collected)}/{len(NPCS)}", UI_CREMA)
         s.blit(num, (x + w - 8 - num.get_width(), y + 3))
         yy = y + 20
@@ -1598,19 +1905,27 @@ class Game:
         if len(self.collected) > len(ultimos):
             s.blit(ui_texto(f"+{len(self.collected) - len(ultimos)} ANTERIORES", UI_GRIS), (x + 8, yy))
             yy += 10
-        for k, (nid, nombre, lin) in enumerate(filas):
-            nuevo = (k == len(filas) - 1 and self.banner_t > 100)
-            ui_rect(s, UI_LINEA, x + 5, yy - 1, 18, 17)
+        for k, nid in enumerate(ultimos):
+            n = self.npc_by_id[nid]
+            nuevo = (k == len(ultimos) - 1 and self.banner_t > 100)
+            ui_rect(s, UI_LINEA, x + 5, yy - 1, 18, 17)         # carita
             ui_rect(s, UI_ORO if nuevo else UI_ORO_OSC, x + 6, yy, 16, 15)
             ui_rect(s, (58, 74, 118), x + 6, yy + 1, 16, 14)
             s.blit(self.caras[nid], (x + 6, yy + 1))
-            s.blit(ui_texto(nombre, UI_ORO), (x + tx, yy - 1))
-            for j, l in enumerate(lin):
-                s.blit(ui_texto(l, UI_CREMA), (x + tx, yy + 9 + 10 * j))
-            yy += max(16, 10 + 10 * len(lin)) + 5
-            if k < len(filas) - 1:
-                for dx in range(x + 6, x + w - 6, 3):            # línea punteada entre requisitos
-                    s.set_at((dx, yy - 3), (62, 78, 116))
+            s.blit(ui_texto(ui_cortar(n["name"], ancho_txt), UI_ORO), (x + tx, yy - 1))
+            px = x + tx                                         # PODER ▮▮▮  INTERÉS ▮▮▯
+            s.blit(ui_texto("PODER", UI_GRIS), (px, yy + 9))
+            px += ui_ancho("PODER") + 4
+            px += ui_medidor(s, px, yy + 11, n.get("poder", "")) + 7
+            s.blit(ui_texto("INTERÉS", UI_GRIS), (px, yy + 9))
+            px += ui_ancho("INTERÉS") + 4
+            ui_medidor(s, px, yy + 11, n.get("interes", ""))
+            cuad = n.get("cuadrante", "")
+            s.blit(ui_texto(ui_cortar(cuad, ancho_txt), COLOR_CUADRANTE.get(cuad, UI_CREMA)), (x + tx, yy + 20))
+            yy += 35
+            if k < len(ultimos) - 1:
+                for dx in range(x + 6, x + w - 6, 3):            # línea punteada entre stakeholders
+                    s.set_at((dx, yy - 4), (62, 78, 116))
 
     # --- globos de los stakeholders -----------------------------------------
     def _ui_globo(self, s, cx, top, lineas, borde=UI_ORO, feet=None):
@@ -1645,53 +1960,9 @@ class Game:
             ui_icono(s, int(cx) - 4, int(top) - 12, ICONO_OK, PAL_OK)    # marca de "identificado"
 
     def _ui_rayo(self, s, cx, cy):
-        """Rayito de conflicto entre dos stakeholders."""
+        """Rayito de conflicto entre dos stakeholders (se usará en el capítulo de conflictos)."""
         if (self.t // 8) % 4 != 3:
             ui_icono(s, int(cx) - 4, int(cy) - 5, ICONO_RAYO, PAL_RAYO)
-
-    # --- avisos ----------------------------------------------------------------
-    def _ui_aviso(self, s):
-        """Cinta de aviso arriba al centro: baja, se queda un rato y vuelve a subir."""
-        if self.banner_t <= 0:
-            return
-        texto = self.banner
-        if texto.startswith("Resuelto"):
-            borde, icono, pal = UI_VERDE, ICONO_OK, PAL_OK
-        elif texto.startswith("Conflicto"):
-            borde, icono, pal = UI_ROJO, ICONO_RAYO, PAL_RAYO
-        elif texto.startswith("¡Recorrido"):
-            borde, icono, pal = UI_ORO, ICONO_ESTRELLA, PAL_ESTRELLA
-        elif "identificada" in texto:
-            borde, icono, pal = UI_ORO, ICONO_OK, PAL_OK
-        else:
-            borde, icono, pal = UI_ORO, None, None
-        con_panel = self.scene != "ext" and self.panel_visible      # si el panel está abierto, el aviso va a su izquierda
-        iw = 15 if icono else 0
-        lin = ui_partir(texto, (186 if con_panel else 250) - iw)
-        bw = max(ui_ancho(l) for l in lin) + 16 + iw
-        bh = 10 * len(lin) + 10
-        x = max(4, ((W - 166) if con_panel else W) // 2 - bw // 2)
-        y = 28
-        if self.banner_t > 158:                                 # entra deslizando desde arriba
-            y -= (self.banner_t - 158) * 4
-        elif self.banner_t < 12:                                # y se va hacia arriba
-            y -= (12 - self.banner_t) * 4
-        ui_marco(s, x, y, bw, bh, borde=borde, fondo=(18, 24, 44))
-        if icono:
-            ui_icono(s, x + 7, y + (bh - 9) // 2, icono, pal)
-        for i, l in enumerate(lin):
-            s.blit(ui_texto(l, UI_CREMA), (x + 8 + iw, y + 5 + 10 * i))
-
-    def _ui_mision(self, s):
-        """Cartel de objetivo (solo afuera del hospital y mientras no hay aviso)."""
-        if self.collected or self.banner_t > 0:
-            return
-        lin = [("MISION:", UI_ORO)] + [(l, UI_CREMA) for l in ui_partir("Identifica a los 7 stakeholders", 100)] \
-              + [(l, UI_GRIS) for l in ui_partir("Entra al hospital", 100)]
-        bw = max(ui_ancho(l) for l, _ in lin) + 16
-        ui_marco(s, 4, 28, bw, 10 * len(lin) + 8)
-        for i, (l, c) in enumerate(lin):
-            s.blit(ui_texto(l, c), (12, 32 + 10 * i))
 
     # --- "Presione E" y ayuda de teclas ----------------------------------------
     def _ui_prompt(self, s, antes, tecla, despues):
@@ -1717,7 +1988,7 @@ class Game:
         ui_rect(s, UI_LINEA, int(cx), y + 15, 1, 1)
 
     def _ui_ayuda(self, s, mapa):
-        """Cuadrito abajo a la izquierda con las teclas (arriba: moverte, abajo: panel de requisitos)."""
+        """Cuadrito abajo a la izquierda con las teclas (arriba: moverte, abajo: panel)."""
         teclas = ("W", "A", "S", "D") if mapa else ("A", "D")
         filas = 2 if self.scene != "ext" else 1
         w = 8 + len(teclas) * 13 + ui_ancho("MOVER") + 6
@@ -1731,6 +2002,125 @@ class Game:
             kx = ui_tecla(s, 10, y + 14, "TAB")
             s.blit(ui_texto("PANEL", UI_GRIS), (10 + kx + 5, y + 16))
 
+    # --- avisos, misión y logro ------------------------------------------------
+    def _ui_aviso(self, s):
+        """Cinta de aviso arriba: baja, se queda un rato y vuelve a subir."""
+        if self.banner_t <= 0:
+            return
+        texto = self.banner
+        if texto.startswith("Resuelto"):
+            borde, icono, pal = UI_VERDE, ICONO_OK, PAL_OK
+        elif texto.startswith("Conflicto"):
+            borde, icono, pal = UI_ROJO, ICONO_RAYO, PAL_RAYO
+        elif texto.startswith(("¡Recorrido", "¡Misión", "Capítulo")):
+            borde, icono, pal = UI_ORO, ICONO_ESTRELLA, PAL_ESTRELLA
+        elif "identificad" in texto:
+            borde, icono, pal = UI_ORO, ICONO_OK, PAL_OK
+        else:
+            borde, icono, pal = UI_ORO, None, None
+        con_panel = self.scene != "ext" and self.panel_visible      # si el panel está abierto, el aviso va a su izquierda
+        iw = 15 if icono else 0
+        lin = ui_partir(texto, (186 if con_panel else 250) - iw)
+        bw = max(ui_ancho(l) for l in lin) + 16 + iw
+        bh = 10 * len(lin) + 10
+        x = max(4, ((W - 170) if con_panel else W) // 2 - bw // 2)
+        y = 28 if self.logro_t <= 0 else 60                     # si está el logro arriba, el aviso baja un poco
+        if self.banner_t > 158:                                 # entra deslizando desde arriba
+            y -= (self.banner_t - 158) * 4
+        elif self.banner_t < 12:                                # y se va hacia arriba
+            y -= (12 - self.banner_t) * 4
+        ui_marco(s, x, y, bw, bh, borde=borde, fondo=(18, 24, 44))
+        if icono:
+            ui_icono(s, x + 7, y + (bh - 9) // 2, icono, pal)
+        for i, l in enumerate(lin):
+            s.blit(ui_texto(l, UI_CREMA), (x + 8 + iw, y + 5 + 10 * i))
+
+    def _ui_mision(self, s):
+        """Cartel de la misión del capítulo (solo en la calle, mientras no hay aviso)."""
+        if self.banner_t > 0 or self.menu is not None:
+            return
+        if self.buzon_nuevo:
+            lin = [("¡MISIÓN CUMPLIDA!", UI_ORO), ("Revisa el buzón", UI_CREMA), ("de la izquierda", UI_CREMA)]
+        elif len(self.collected) < len(NPCS):
+            cap = CAPITULOS[self.capitulo - 1]
+            lin = [(f"CAPÍTULO {self.capitulo}", UI_ORO)] + [(l, UI_CREMA) for l in ui_partir(cap["mision"], 100)] \
+                  + [(f"Llevas {len(self.collected)}/{len(NPCS)}", UI_GRIS)]
+        else:
+            return
+        bw = max(ui_ancho(l) for l, _ in lin) + 16
+        ui_marco(s, 4, 28, bw, 10 * len(lin) + 8)
+        for i, (l, c) in enumerate(lin):
+            s.blit(ui_texto(l, c), (12, 32 + 10 * i))
+
+    def _ui_logro(self, s):
+        """Recuadro de '¡Logro obtenido!' que entra por la derecha (como en Minecraft)."""
+        if self.logro_t <= 0:
+            return
+        self.logro_t -= 1
+        t1, t2 = "¡LOGRO OBTENIDO!", self.logro_txt
+        bw = max(ui_ancho(t1), ui_ancho(t2)) + 36
+        x, y = W - bw - 4, 26
+        if self.logro_t > 280:                                  # entra desde la derecha
+            x += (self.logro_t - 280) * 10
+        elif self.logro_t < 16:                                 # y se va por la derecha
+            x += (16 - self.logro_t) * 14
+        ui_marco(s, x, y, bw, 30, borde=(150, 150, 162), fondo=(40, 40, 48))
+        ui_rect(s, (24, 24, 30), x + 5, y + 5, 19, 20)          # cuadrito del icono
+        ui_icono(s, x + 10, y + 10, ICONO_TROFEO, PAL_TROFEO)
+        s.blit(ui_texto(t1, (255, 255, 85)), (x + 29, y + 4))
+        s.blit(ui_texto(t2, (255, 255, 255)), (x + 29, y + 15))
+
+    # --- menú del buzón -------------------------------------------------------
+    def _ui_menu(self, s):
+        if self.menu is None:
+            return
+        ui_rect(s, (0, 0, 0, 140), 0, 0, W, H)                  # oscurece el fondo
+        bw, bh = 262, 22 + 27 * len(CAPITULOS) + 22
+        x, y = (W - bw) // 2, (H - bh) // 2
+        ui_marco(s, x, y, bw, bh)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, bw - 6, 13)
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 16, bw - 6, 1)
+        s.blit(ui_texto("BUZÓN · CAPÍTULOS", UI_ORO), (x + 8, y + 3))
+        for i, cap in enumerate(CAPITULOS):
+            ry = y + 21 + i * 27
+            libre = i < self.desbloqueados
+            elegido = libre and i == self.menu["sel"]
+            ui_rect(s, (48, 64, 106) if elegido else (28, 38, 66), x + 6, ry, bw - 12, 24)
+            if elegido:                                         # marco dorado y flechita que se mueve
+                for rx, rw in ((x + 6, bw - 12),):
+                    ui_rect(s, UI_ORO, rx, ry, rw, 1)
+                    ui_rect(s, UI_ORO, rx, ry + 23, rw, 1)
+                ui_rect(s, UI_ORO, x + 6, ry, 1, 24)
+                ui_rect(s, UI_ORO, x + bw - 7, ry, 1, 24)
+                fx = x + 10 + (self.t // 15) % 2
+                for k in range(4):
+                    ui_rect(s, UI_ORO, fx + k, ry + 8 + k, 1, 8 - 2 * k)
+            bx = x + 18                                         # numerito del capítulo
+            ui_rect(s, UI_LINEA, bx, ry + 4, 16, 16)
+            ui_rect(s, UI_ORO if libre else (70, 78, 100), bx + 1, ry + 5, 14, 14)
+            s.blit(ui_texto(str(i + 1), UI_FONDO, None), (bx + 5, ry + 6))
+            if libre:
+                s.blit(ui_texto(f"CAPÍTULO {i + 1}", UI_ORO), (x + 40, ry + 2))
+                s.blit(ui_texto(cap["titulo"], UI_CREMA), (x + 40, ry + 12))
+                if cap.get("logro") and cap["logro"] in self.logros:
+                    ui_icono(s, x + bw - 20, ry + 8, ICONO_OK, PAL_OK)        # capítulo completado
+                elif i > 0 and (self.t // 20) % 3 != 0:
+                    s.blit(ui_texto("NUEVO", (255, 255, 85)), (x + bw - 44, ry + 2))
+            else:
+                ui_icono(s, x + 40, ry + 8, ICONO_CANDADO, PAL_CANDADO)
+                s.blit(ui_texto("???", UI_GRIS), (x + 52, ry + 7))
+        hy = y + bh - 19                                        # ayuda de teclas del menú
+        hx = x + 10
+        for k in ("W", "S"):
+            hx += ui_tecla(s, hx, hy, k) + 2
+        s.blit(ui_texto("ELEGIR", UI_GRIS), (hx + 3, hy + 2))
+        hx += ui_ancho("ELEGIR") + 12
+        hx += ui_tecla(s, hx, hy, "E") + 4
+        s.blit(ui_texto("ABRIR", UI_GRIS), (hx, hy + 2))
+        hx += ui_ancho("ABRIR") + 10
+        hx += ui_tecla(s, hx, hy, "ESC") + 4
+        s.blit(ui_texto("CERRAR", UI_GRIS), (hx, hy + 2))
+
     # --- dibujo principal de la interfaz -------------------------------------
     def _ui_actores(self, s):
         """Globos de los stakeholders, marcas de 'identificado' y rayo de conflicto."""
@@ -1738,7 +2128,8 @@ class Game:
             cx, cy = self.cam_mapa()
             for n in NPCS:
                 nx, ny = self.map_pos(n["id"])
-                sx, top, feet = nx + 16 - cx, ny - cy, ny + 30 - cy
+                dx, dy, _ = self._pose(n)
+                sx, top, feet = nx + 16 - cx + dx, ny - cy + dy, ny + 30 - cy
                 if 0 <= sx <= W and 0 <= feet <= H:
                     self._ui_globo_stakeholder(s, n, sx, top, feet, True)
             for k, c in CONFLICTS.items():
@@ -1750,7 +2141,8 @@ class Game:
         elif self.scene == "sala":
             info = SALAS[self.sala]
             n = self.npc_by_id[info["npc"]]
-            self._ui_globo_stakeholder(s, n, info["x"] + SPRITE / 2, GROUND - FEET, None, False)
+            dx, dy, _ = self._pose(n)
+            self._ui_globo_stakeholder(s, n, info["x"] + dx * 2 + SPRITE / 2, GROUND - FEET + dy * 2, None, False)
 
     def draw_ui(self, screen):
         self._ui_init()
@@ -1758,20 +2150,25 @@ class Game:
         s.fill((0, 0, 0, 0))
         quien = None                                            # (x, y de la cabeza de tu personaje) para la teclita
         pregunta = None                                         # texto del cartel "Presione E"
+        libre = self.trans is None and self.menu is None
         if self.scene == "ext":
             zona = "Exterior · Hospital"
-            if self.trans is None and self.near_door():
+            if libre and self.near_door():
                 pregunta = "ENTRAR"
+            elif libre and self.cerca_buzon():
+                pregunta = "VER CAPÍTULOS"
         elif self.scene == "map":
             cx, cy = self.cam_mapa()
             zona = "Hospital · Pasillos"
             quien = (self.mx + 16 - cx, self.my - cy)
-            if self.trans is None and not self.lock_door and self._puerta_actual():
+            if libre and not self.lock_door and self._puerta_actual():
                 pregunta = "ENTRAR"
+            elif libre and self.en_salida():
+                pregunta = "SALIR"
         else:
             zona = SALAS[self.sala]["name"]
             quien = (self.px + SPRITE / 2, GROUND - FEET)
-            if self.trans is None and self.px < 34:
+            if libre and self.px < 34:
                 pregunta = "SALIR"
 
         self._ui_barra(s, zona)
@@ -1785,7 +2182,10 @@ class Game:
             if quien:
                 self._ui_tecla_flotante(s, quien[0], quien[1])
             self._ui_prompt(s, "PRESIONE", "E", "PARA " + pregunta)
-        self._ui_ayuda(s, self.scene == "map")
+        if self.menu is None:
+            self._ui_ayuda(s, self.scene == "map")
+        self._ui_logro(s)
+        self._ui_menu(s)
         screen.blit(pygame.transform.scale(s, (SCREEN_W, SCREEN_H)), (0, 0))
 
     def render(self, screen):
@@ -1799,6 +2199,7 @@ class Game:
         if self.fade > 0:                                       # fundido a negro
             self._fade_surf.set_alpha(int(255 * self.fade))
             screen.blit(self._fade_surf, (0, 0))
+    # ======================== FIN DEL BLOQUE C ========================
 
 def main():
     pygame.init()
@@ -1813,22 +2214,20 @@ def main():
             if e.type == pygame.QUIT:
                 running = False
             elif e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_ESCAPE:
-                    running = False
-                elif e.key == pygame.K_F11:
+                if e.key == pygame.K_F11:
                     pygame.display.toggle_fullscreen()
-                elif e.key == pygame.K_e:
-                    game.press_e()
-                elif e.key == pygame.K_TAB:
-                    game._ui_init()
-                    game.panel_visible = not game.panel_visible
+                elif game.tecla(e.key) == "salir":      # E, TAB, ESC y el menú del buzón
+                    running = False
         k = pygame.key.get_pressed()
-        game.update(k[pygame.K_LEFT] or k[pygame.K_a], k[pygame.K_RIGHT] or k[pygame.K_d], k[pygame.K_UP] or k[pygame.K_w], k[pygame.K_DOWN] or k[pygame.K_s])        
+        if game.menu is None:
+            game.update(k[pygame.K_LEFT] or k[pygame.K_a], k[pygame.K_RIGHT] or k[pygame.K_d],
+                        k[pygame.K_UP] or k[pygame.K_w], k[pygame.K_DOWN] or k[pygame.K_s])
+        else:
+            game.update(False, False)                     # con el menú abierto no te mueves
         game.render(screen)
         pygame.display.flip()
         clock.tick(60)
     pygame.quit()
-
 
 if __name__ == "__main__":
     main()
