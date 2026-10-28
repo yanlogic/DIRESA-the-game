@@ -21,8 +21,8 @@ SPRITE = int(32 * CHAR_SCALE)
 FEET = int(30 * CHAR_SCALE)
 HOSPITAL_CLOSED = "assets/hospital_cerrado.png"   # tu hospital con la puerta cerrada
 HOSPITAL_OPEN = "assets/hospital_abierto.png"     # el mismo hospital con la puerta abierta
-HOSPITAL_SCALE = 2       # ampliación del hospital: 1, 2 o 3 (números enteros = píxeles nítidos)
-DOOR_X_IMG = 157         # dónde está el centro de la puerta dentro de la imagen (en píxeles de la imagen)
+HOSPITAL_SCALE = 3      # ampliación del hospital: 1, 2 o 3 (números enteros = píxeles nítidos)
+DOOR_X_IMG = 105         # dónde está el centro de la puerta dentro de la imagen (en píxeles de la imagen)
 
 
 def res(path):
@@ -220,6 +220,136 @@ def draw_exterior(s):
     box(s, (150, 150, 158), x0, GROUND + 12, x1 - x0, 2)
     box(s, (92, 96, 106), x0, GROUND + 14, x1 - x0, H - GROUND - 14)
     for vx in range(x0 + 10, x1, 56):
+        box(s, (236, 220, 120), vx, GROUND + 22, 26, 3)
+
+def _nube(s, x, y, w, h):
+    """nube de píxeles: cuerpo + bultos arriba + sombra abajo"""
+    box(s, (232, 242, 250), x, y + h // 2, w, h // 2)
+    for bx, bw, bh in ((w * 0.10, w * 0.34, h * 0.75), (w * 0.34, w * 0.40, h * 1.0), (w * 0.62, w * 0.30, h * 0.65)):
+        box(s, (250, 253, 255), x + int(bx), y + h - int(bh), int(bw), int(bh))
+    box(s, (206, 224, 240), x, y + h - 3, w, 3)
+    box(s, (250, 253, 255), x + 2, y + h // 2, w - 4, 2)
+
+
+def _arbol(s, x, base, r):
+    """árbol con contorno oscuro y dos tonos de verde"""
+    box(s, (92, 60, 44), x - 3, base - r - 2, 6, r + 2)
+    box(s, (130, 90, 62), x - 2, base - r - 2, 2, r + 2)
+    puntos = ((0, -2.2 * r, 0.95 * r), (-0.8 * r, -1.5 * r, 0.8 * r), (0.8 * r, -1.5 * r, 0.8 * r), (0, -1.1 * r, 0.9 * r))
+    for dx, dy, rr in puntos:
+        pygame.draw.circle(s, (28, 70, 60), (int(x + dx), int(base + dy)), int(rr) + 1)
+    for dx, dy, rr in puntos:
+        pygame.draw.circle(s, (58, 140, 92), (int(x + dx), int(base + dy)), int(rr))
+    for dx, dy, rr in puntos:
+        pygame.draw.circle(s, (96, 186, 118), (int(x + dx - rr * 0.25), int(base + dy - rr * 0.3)), max(2, int(rr * 0.55)))
+
+
+def _farola(s, x, base):
+    box(s, (40, 56, 70), x - 1, base - 60, 3, 60)
+    box(s, (40, 56, 70), x - 5, base - 3, 11, 3)
+    box(s, (40, 56, 70), x - 1, base - 64, 9, 3)
+    obox(s, (255, 240, 170), x + 4, base - 62, 7, 6, (40, 56, 70))
+    box(s, (255, 252, 224), x + 5, base - 61, 3, 2)
+
+
+def _seto(s, x, y, w, flores=True):
+    obox(s, (64, 150, 90), x, y, w, 9, (28, 84, 64))
+    box(s, (104, 190, 120), x, y, w, 2)
+    for i in range(0, w - 3, 5):
+        box(s, (44, 120, 80), x + i + 2, y + 5, 2, 2)
+    if flores:
+        cols = ((240, 110, 130), (250, 220, 90), (250, 250, 250))
+        for i in range(2, w - 2, 7):
+            box(s, cols[(i // 7) % 3], x + i, y + 1 + (i % 3), 2, 2)
+
+
+def _reja(s, x0, x1, base):
+    for x in range(x0, x1, 5):
+        box(s, (250, 250, 246), x, base - 14, 3, 14)
+        box(s, (190, 200, 210), x + 2, base - 14, 1, 14)
+        box(s, (250, 250, 246), x, base - 16, 3, 1)
+    box(s, (250, 250, 246), x0, base - 10, x1 - x0, 2)
+    box(s, (190, 200, 210), x0, base - 8, x1 - x0, 1)
+
+
+def _ambulancia(s, x, base):
+    """ambulancia chiquita (dibujo propio) mirando a la izquierda"""
+    ol = (34, 50, 70)
+    obox(s, (248, 250, 252), x, base - 36, 62, 30, ol)                 # carrocería
+    obox(s, (248, 250, 252), x - 16, base - 24, 18, 18, ol)            # trompa
+    box(s, (200, 214, 226), x, base - 12, 62, 6)
+    box(s, (214, 60, 70), x, base - 20, 62, 4)                         # franja roja
+    obox(s, (130, 200, 224), x - 12, base - 34, 12, 12, ol)           # parabrisas
+    box(s, (200, 238, 250), x - 11, base - 33, 4, 3)
+    obox(s, (130, 200, 224), x + 8, base - 32, 12, 9, ol)             # ventana
+    box(s, (214, 60, 70), x + 36, base - 31, 5, 15)                    # cruz
+    box(s, (214, 60, 70), x + 31, base - 26, 15, 5)
+    obox(s, (230, 70, 80), x + 22, base - 40, 12, 4, ol)              # sirena
+    box(s, (130, 190, 255), x + 22, base - 40, 4, 4)
+    box(s, (255, 230, 120), x - 16, base - 14, 4, 4)                   # faro
+    for wx in (x - 6, x + 44):
+        pygame.draw.circle(s, ol, (wx + 6, base - 4), 8)
+        pygame.draw.circle(s, (58, 64, 76), (wx + 6, base - 4), 6)
+        pygame.draw.circle(s, (190, 198, 210), (wx + 6, base - 4), 3)
+    box(s, (0, 0, 0), x - 17, base + 3, 82, 0)
+
+
+def draw_exterior(s):
+    """Afueras del hospital: cielo, ciudad, árboles, jardín, vereda y calle (una sola pantalla)."""
+    # cielo con bandas
+    for y in range(0, GROUND, 4):
+        box(s, lerp((96, 168, 222), (204, 232, 246), y / GROUND), 0, y, W, 4)
+    pygame.draw.circle(s, (255, 244, 190), (330, 34), 15)
+    pygame.draw.circle(s, (255, 250, 220), (330, 34), 10)
+    _nube(s, 18, 22, 52, 16)
+    _nube(s, 118, 12, 40, 12)
+    _nube(s, 250, 56, 60, 16)
+    _nube(s, 84, 60, 34, 10)
+    # ciudad lejana (dos planos)
+    for bx, bw, bh in ((2, 30, 56), (30, 26, 76), (54, 34, 48), (92, 22, 64), (270, 30, 62), (298, 24, 82), (320, 34, 54), (352, 32, 70)):
+        box(s, (166, 200, 224), bx, GROUND - 14 - bh, bw, bh)
+    for bx, bw, bh in ((0, 26, 40), (24, 34, 58), (60, 22, 36), (84, 28, 50), (284, 28, 46), (310, 30, 64), (338, 24, 42), (360, 24, 58)):
+        box(s, (132, 176, 206), bx, GROUND - 14 - bh, bw, bh)
+        for wy in range(GROUND - 14 - bh + 5, GROUND - 22, 9):
+            for wx in range(bx + 4, bx + bw - 5, 8):
+                box(s, (206, 230, 244), wx, wy, 3, 4)
+    # césped
+    box(s, (92, 176, 104), 0, GROUND - 22, W, 22)
+    for gy in range(GROUND - 22, GROUND, 4):
+        box(s, (84, 164, 96), 0, gy + 2, W, 1)
+    for gx in range(3, W, 9):
+        box(s, (122, 204, 124), gx, GROUND - 20 + (gx * 7) % 14, 2, 1)
+    # árboles y rejas a los lados del hospital
+    _arbol(s, 28, GROUND - 14, 15)
+    _arbol(s, 354, GROUND - 14, 14)
+    _arbol(s, 66, GROUND - 14, 10)
+    _reja(s, 8, 50, GROUND - 3)
+    _reja(s, 322, 376, GROUND - 3)
+    _seto(s, 10, GROUND - 12, 36)
+    _seto(s, 326, GROUND - 12, 44)
+    # vereda
+    box(s, (206, 208, 216), 0, GROUND, W, 14)
+    for vx in range(0, W, 24):
+        box(s, (176, 180, 192), vx, GROUND + 1, 1, 13)
+    box(s, (226, 228, 234), 0, GROUND, W, 1)
+    box(s, (150, 154, 168), 0, GROUND + 12, W, 2)
+    # elementos de la vereda
+    _farola(s, 52, GROUND + 2)
+    _farola(s, 330, GROUND + 2)
+    obox(s, (140, 100, 70), 130 - 100 + 100, GROUND - 14, 0, 0, (0, 0, 0)) if False else None
+    # banca (izquierda)
+    box(s, (150, 108, 76), 14, GROUND - 12, 30, 4)
+    box(s, (150, 108, 76), 14, GROUND - 18, 30, 3)
+    box(s, (92, 66, 50), 16, GROUND - 8, 3, 8)
+    box(s, (92, 66, 50), 39, GROUND - 8, 3, 8)
+    # ambulancia (derecha)
+    _ambulancia(s, 312, GROUND + 3)
+    # cartel de bienvenida
+    sign(s, 42, 96, "BIENVENIDO", (60, 140, 110), w=76)
+    # calle
+    box(s, (92, 96, 106), 0, GROUND + 14, W, H - GROUND - 14)
+    box(s, (120, 124, 134), 0, GROUND + 14, W, 2)
+    for vx in range(10, W, 56):
         box(s, (236, 220, 120), vx, GROUND + 22, 26, 3)
 
 
@@ -529,6 +659,176 @@ def load_npc_front():
         else:
             out[n["id"]] = make_npc_sprite(n["body"], n["accent"], n["kind"])
     return out
+
+# ----------------------------------------------------------------------------
+# INTERFAZ (UI) EN PIXEL ART
+# Todo se dibuja en 384x216 (igual que el mundo) y luego se amplía x3, así los
+# marcos, los textos y los iconos quedan con píxeles nítidos.
+# ----------------------------------------------------------------------------
+UI_FONDO = (22, 30, 52)         # azul noche de los paneles
+UI_FONDO2 = (36, 48, 82)        # azul un poco más claro (franjas y brillos)
+UI_LINEA = (8, 12, 24)          # contorno oscuro de todo
+UI_ORO = (240, 180, 41)         # dorado de los bordes y títulos
+UI_ORO_OSC = (150, 100, 24)
+UI_CREMA = (251, 234, 208)      # texto principal
+UI_GRIS = (140, 154, 184)       # texto secundario
+UI_ROJO = (222, 92, 92)         # conflictos
+UI_VERDE = (110, 200, 120)      # resuelto / identificado
+
+# Letra pixel art de 5x7 (todo en mayúsculas). Cada letra = 7 filas separadas por coma.
+_LETRAS = {
+    "A": "01110,10001,10001,11111,10001,10001,10001", "B": "11110,10001,10001,11110,10001,10001,11110",
+    "C": "01110,10001,10000,10000,10000,10001,01110", "D": "11110,10001,10001,10001,10001,10001,11110",
+    "E": "11111,10000,10000,11110,10000,10000,11111", "F": "11111,10000,10000,11110,10000,10000,10000",
+    "G": "01110,10001,10000,10111,10001,10001,01111", "H": "10001,10001,10001,11111,10001,10001,10001",
+    "I": "01110,00100,00100,00100,00100,00100,01110", "J": "00111,00010,00010,00010,00010,10010,01100",
+    "K": "10001,10010,10100,11000,10100,10010,10001", "L": "10000,10000,10000,10000,10000,10000,11111",
+    "M": "10001,11011,10101,10101,10001,10001,10001", "N": "10001,11001,11001,10101,10011,10011,10001",
+    "O": "01110,10001,10001,10001,10001,10001,01110", "P": "11110,10001,10001,11110,10000,10000,10000",
+    "Q": "01110,10001,10001,10001,10101,10010,01101", "R": "11110,10001,10001,11110,10100,10010,10001",
+    "S": "01111,10000,10000,01110,00001,00001,11110", "T": "11111,00100,00100,00100,00100,00100,00100",
+    "U": "10001,10001,10001,10001,10001,10001,01110", "V": "10001,10001,10001,10001,10001,01010,00100",
+    "W": "10001,10001,10001,10101,10101,11011,10001", "X": "10001,10001,01010,00100,01010,10001,10001",
+    "Y": "10001,10001,01010,00100,00100,00100,00100", "Z": "11111,00001,00010,00100,01000,10000,11111",
+    "0": "01110,10001,10011,10101,11001,10001,01110", "1": "00100,01100,00100,00100,00100,00100,01110",
+    "2": "01110,10001,00001,00010,00100,01000,11111", "3": "11110,00001,00001,01110,00001,00001,11110",
+    "4": "00010,00110,01010,10010,11111,00010,00010", "5": "11111,10000,11110,00001,00001,10001,01110",
+    "6": "00110,01000,10000,11110,10001,10001,01110", "7": "11111,00001,00010,00100,01000,01000,01000",
+    "8": "01110,10001,10001,01110,10001,10001,01110", "9": "01110,10001,10001,01111,00001,00010,01100",
+    " ": "000,000,000,000,000,000,000", ".": "0,0,0,0,0,0,1", ",": "0,0,0,0,0,1,1", ":": "0,1,0,0,0,1,0",
+    "!": "1,1,1,1,1,0,1", "¡": "1,0,1,1,1,1,1", "?": "01110,10001,00001,00010,00100,00000,00100",
+    "¿": "00100,00000,00100,01000,10000,10001,01110", "/": "00001,00001,00010,00100,01000,10000,10000",
+    "-": "000,000,000,111,000,000,000", "+": "000,000,010,111,010,000,000", "(": "01,10,10,10,10,10,01",
+    ")": "10,01,01,01,01,01,10", "·": "0,0,0,1,0,0,0", "'": "1,1,0,0,0,0,0", "%": "10001,10010,00010,00100,01000,01001,10001",
+}
+LETRAS = {k: v.split(",") for k, v in _LETRAS.items()}
+# letras con tilde: (letra base, tilde). La tilde se dibuja en 2 filas encima de la letra.
+_TILDES = {"agudo": ("00010", "00100"), "tilde": ("01001", "10010"), "diere": ("01010", "00000")}
+ACENTOS = {"Á": ("A", "agudo"), "É": ("E", "agudo"), "Í": ("I", "agudo"), "Ó": ("O", "agudo"),
+           "Ú": ("U", "agudo"), "Ñ": ("N", "tilde"), "Ü": ("U", "diere")}
+_CAMBIOS = {"—": "-", "–": "-", "…": "...", "“": "'", "”": "'", '"': "'", "«": "'", "»": "'", "’": "'",
+            "[": "(", "]": ")", "·": "·"}
+_CACHE_TEXTO = {}
+
+
+def _limpiar(texto):
+    for a, b in _CAMBIOS.items():
+        texto = texto.replace(a, b)
+    return texto.upper()
+
+
+def ui_ancho(texto):
+    """Ancho en píxeles de un texto con la letra pixel art."""
+    total = 0
+    for ch in _limpiar(texto):
+        base = ACENTOS[ch][0] if ch in ACENTOS else ch
+        total += len(LETRAS.get(base, LETRAS["?"])[0]) + 1
+    return max(0, total - 1)
+
+
+def ui_texto(texto, color, sombra=UI_LINEA):
+    """Devuelve una imagen del texto (con sombra de 1 píxel). Se guarda en memoria para no redibujar."""
+    clave = (texto, color, sombra)
+    if clave in _CACHE_TEXTO:
+        return _CACHE_TEXTO[clave]
+    texto = _limpiar(texto)
+    s = pygame.Surface((ui_ancho(texto) + 2, 10), pygame.SRCALPHA)
+    for col, dx, dy in ((sombra, 1, 1), (color, 0, 0)):
+        if col is None:
+            continue
+        x = 0
+        for ch in texto:
+            base, tilde = ACENTOS.get(ch, (ch, None))
+            g = LETRAS.get(base, LETRAS["?"])
+            for j, fila in enumerate(g):
+                for i, v in enumerate(fila):
+                    if v == "1":
+                        s.set_at((x + i + dx, 2 + j + dy), col)
+            if tilde:
+                for j, fila in enumerate(_TILDES[tilde]):
+                    for i, v in enumerate(fila):
+                        if v == "1" and i < len(g[0]):
+                            s.set_at((x + i + dx, j + dy), col)
+            x += len(g[0]) + 1
+    _CACHE_TEXTO[clave] = s
+    return s
+
+
+def ui_partir(texto, ancho):
+    """Parte un texto en líneas que no pasen de 'ancho' píxeles."""
+    lineas, actual = [], ""
+    for palabra in texto.split(" "):
+        prueba = (actual + " " + palabra).strip()
+        if ui_ancho(prueba) > ancho and actual:
+            lineas.append(actual)
+            actual = palabra
+        else:
+            actual = prueba
+    if actual:
+        lineas.append(actual)
+    return lineas
+
+
+def ui_cortar(texto, ancho):
+    """Corta un texto con '...' si no cabe en 'ancho' píxeles."""
+    if ui_ancho(texto) <= ancho:
+        return texto
+    while len(texto) > 1 and ui_ancho(texto + "...") > ancho:
+        texto = texto[:-1]
+    return texto.rstrip() + "..."
+
+
+def ui_rect(s, color, x, y, w, h):
+    if w > 0 and h > 0:
+        pygame.draw.rect(s, color, (int(x), int(y), int(w), int(h)))
+
+
+def ui_marco(s, x, y, w, h, borde=UI_ORO, fondo=UI_FONDO, brillo=True, sombra=True):
+    """Marco pixel art: sombra, contorno oscuro con esquinas cortadas, borde de color y fondo con brillo."""
+    x, y, w, h = int(x), int(y), int(w), int(h)
+    if sombra:
+        ui_rect(s, (0, 0, 0, 80), x + 1, y + 2, w, h)
+    ui_rect(s, UI_LINEA, x + 1, y, w - 2, h)               # contorno (esquinas cortadas)
+    ui_rect(s, UI_LINEA, x, y + 1, w, h - 2)
+    ui_rect(s, borde, x + 2, y + 1, w - 4, h - 2)           # borde de color
+    ui_rect(s, borde, x + 1, y + 2, w - 2, h - 4)
+    ui_rect(s, fondo, x + 3, y + 2, w - 6, h - 4)           # fondo
+    ui_rect(s, fondo, x + 2, y + 3, w - 4, h - 6)
+    if brillo:
+        ui_rect(s, tuple(min(255, c + 14) for c in fondo[:3]), x + 3, y + 2, w - 6, 1)   # brillo arriba
+        ui_rect(s, tuple(max(0, c - 8) for c in fondo[:3]), x + 3, y + h - 3, w - 6, 1)  # sombra abajo
+    for cx, cy in ((x + 2, y + 2), (x + w - 3, y + 2), (x + 2, y + h - 3), (x + w - 3, y + h - 3)):
+        s.set_at((cx, cy), borde)                           # remaches en las esquinas
+
+
+def ui_icono(s, x, y, filas, paleta):
+    """Dibuja un icono hecho con letras: cada letra de 'filas' es un color de 'paleta' ('.' = nada)."""
+    for j, fila in enumerate(filas):
+        for i, ch in enumerate(fila):
+            if ch in paleta:
+                s.set_at((int(x) + i, int(y) + j), paleta[ch])
+
+
+ICONO_OK = ["..LLLLL..", ".LGGGGGL.", "LGGGGGWGL", "LGGGGWWGL", "LGWGWWGGL", "LGGWWGGGL", "LGGGWGGGL", ".LGGGGGL.", "..LLLLL.."]
+PAL_OK = {"L": UI_LINEA, "G": (70, 170, 100), "W": (255, 255, 255)}
+ICONO_RAYO = ["....LLL.", "...LYYL.", "..LYYL..", ".LYYYL..", "LYYYYYYL", "LLLYYYL.", "..LYYL..", "..LYL...", "..LL...."]
+PAL_RAYO = {"L": (120, 40, 30), "Y": (255, 214, 64)}
+ICONO_ESTRELLA = ["....L....", "...LYL...", "...LYL...", "LLLLYLLLL", ".LYYYYYL.", "..LYYYL..", "..LYLYL..", ".LYL.LYL.", ".LL...LL."]
+PAL_ESTRELLA = {"L": (120, 70, 20), "Y": (255, 214, 64)}
+
+
+def ui_tecla(s, x, y, letra, abajo=False):
+    """Tecla de teclado pixel art. Devuelve su ancho."""
+    x, y = int(x), int(y) + (1 if abajo else 0)
+    w = ui_ancho(letra) + 6
+    ui_rect(s, UI_LINEA, x + 1, y, w - 2, 12)
+    ui_rect(s, UI_LINEA, x, y + 1, w, 10)
+    ui_rect(s, (170, 150, 120), x + 1, y + 9, w - 2, 2)          # canto de la tecla
+    ui_rect(s, UI_CREMA, x + 1, y + 1, w - 2, 9)                 # cara de la tecla
+    ui_rect(s, (255, 250, 238), x + 2, y + 1, w - 4, 1)
+    s.blit(ui_texto(letra, UI_FONDO, None), (x + 3, y))
+    return w
+
 
 # ----------------------------------------------------------------------------
 # Juego
@@ -1215,6 +1515,291 @@ class Game:
         elif self.scene == "sala" and self.px < 34:
             self.trans = dict(kind="mapa", phase="fadeout", t=0)
 
+    # ======================================================================
+    # INTERFAZ PIXEL ART (pega todo esto al final de la clase Game, después de press_e)
+    # ======================================================================
+    def _ui_init(self):
+        """Prepara la capa de interfaz y las caritas. Se llama sola la primera vez."""
+        if hasattr(self, "ui"):
+            return
+        self.ui = pygame.Surface((W, H), pygame.SRCALPHA)       # capa de la interfaz (384x216)
+        self.panel_visible = True                               # TAB muestra / oculta el panel de requisitos
+        self.caras, self.siluetas = {}, {}
+        for n in NPCS:
+            cara = self.npc_front[n["id"]].subsurface((8, 1, 16, 14)).copy()   # solo la cabeza
+            self.caras[n["id"]] = cara
+            self.siluetas[n["id"]] = pygame.mask.from_surface(cara).to_surface(
+                setcolor=(44, 58, 94, 255), unsetcolor=(0, 0, 0, 0))
+
+    # --- barra superior ---------------------------------------------------
+    def _ui_barra(self, s, zona):
+        ui_rect(s, (0, 0, 0, 70), 0, 22, W, 2)                  # sombra bajo la barra
+        ui_rect(s, UI_FONDO, 0, 0, W, 20)
+        ui_rect(s, UI_FONDO2, 0, 1, W, 1)
+        ui_rect(s, UI_ORO, 0, 20, W, 1)
+        ui_rect(s, UI_LINEA, 0, 21, W, 1)
+        # insignia del hospital (cruz roja sobre blanco)
+        ui_rect(s, UI_LINEA, 4, 3, 14, 14)
+        ui_rect(s, (245, 248, 250), 5, 4, 12, 12)
+        ui_rect(s, (214, 58, 58), 9, 5, 4, 10)
+        ui_rect(s, (214, 58, 58), 6, 8, 10, 4)
+        # nombre de la zona
+        s.blit(ui_texto(zona, UI_CREMA), (24, 5))
+        # retratos de los 7 stakeholders (progreso)
+        total = len(NPCS)
+        cont = ui_texto(f"{len(self.collected)}/{total}", UI_ORO)
+        x0 = W - 6 - cont.get_width() - 6 - total * 21
+        for i, n in enumerate(NPCS):
+            x = x0 + i * 21
+            ok = n["id"] in self.collected
+            borde = UI_ORO if ok else (62, 78, 116)
+            if ok and self.collected[-1] == n["id"] and self.banner_t > 100 and (self.t // 6) % 2 == 0:
+                borde = (255, 255, 255)                         # destello al identificar a alguien
+            ui_rect(s, UI_LINEA, x, 1, 20, 18)
+            ui_rect(s, borde, x + 1, 2, 18, 16)
+            ui_rect(s, (30, 42, 74) if not ok else (58, 74, 118), x + 2, 3, 16, 14)
+            s.blit(self.caras[n["id"]] if ok else self.siluetas[n["id"]], (x + 2, 3))
+        s.blit(cont, (W - 6 - cont.get_width(), 5))
+
+    # --- panel de requisitos ----------------------------------------------
+    def _ui_panel(self, s):
+        if not self.panel_visible:
+            return
+        w, tx = 158, 25                                         # ancho del panel y dónde empieza el texto
+        ancho_txt = w - tx - 6
+        ultimos = self.collected[-4:]                           # se muestran los 4 más recientes
+        filas = []
+        for nid in ultimos:
+            n = self.npc_by_id[nid]
+            nombre = ui_cortar(n["name"].split(" / ")[0], ancho_txt)
+            filas.append((nid, nombre, ui_partir(n["need"], ancho_txt)[:2]))
+        alto = 16 + 4
+        if not self.collected:
+            hint = ui_partir("Entra a cada sala y acércate a la persona", w - 14)
+            alto += 10 * len(hint) + 4
+        else:
+            if len(self.collected) > len(ultimos):
+                alto += 10
+            for _, _, lin in filas:
+                alto += max(16, 10 + 10 * len(lin)) + 5
+        x, y = W - w - 4, 28
+        ui_marco(s, x, y, w, alto)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, w - 6, 13)          # franja del título
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 16, w - 6, 1)
+        s.blit(ui_texto("REQUISITOS", UI_ORO), (x + 8, y + 3))
+        num = ui_texto(f"{len(self.collected)}/{len(NPCS)}", UI_CREMA)
+        s.blit(num, (x + w - 8 - num.get_width(), y + 3))
+        yy = y + 20
+        if not self.collected:
+            for l in hint:
+                s.blit(ui_texto(l, UI_GRIS), (x + 7, yy))
+                yy += 10
+            return
+        if len(self.collected) > len(ultimos):
+            s.blit(ui_texto(f"+{len(self.collected) - len(ultimos)} ANTERIORES", UI_GRIS), (x + 8, yy))
+            yy += 10
+        for k, (nid, nombre, lin) in enumerate(filas):
+            nuevo = (k == len(filas) - 1 and self.banner_t > 100)
+            ui_rect(s, UI_LINEA, x + 5, yy - 1, 18, 17)
+            ui_rect(s, UI_ORO if nuevo else UI_ORO_OSC, x + 6, yy, 16, 15)
+            ui_rect(s, (58, 74, 118), x + 6, yy + 1, 16, 14)
+            s.blit(self.caras[nid], (x + 6, yy + 1))
+            s.blit(ui_texto(nombre, UI_ORO), (x + tx, yy - 1))
+            for j, l in enumerate(lin):
+                s.blit(ui_texto(l, UI_CREMA), (x + tx, yy + 9 + 10 * j))
+            yy += max(16, 10 + 10 * len(lin)) + 5
+            if k < len(filas) - 1:
+                for dx in range(x + 6, x + w - 6, 3):            # línea punteada entre requisitos
+                    s.set_at((dx, yy - 3), (62, 78, 116))
+
+    # --- globos de los stakeholders -----------------------------------------
+    def _ui_globo(self, s, cx, top, lineas, borde=UI_ORO, feet=None):
+        """Globo pixel art sobre la cabeza (o debajo si no cabe). lineas = [(texto, color), ...]"""
+        cx, top = int(cx), int(top)
+        bw = max(ui_ancho(t) for t, _ in lineas) + 12
+        bh = 10 * len(lineas) + 7
+        x = max(4, min(W - bw - 4, cx - bw // 2))
+        y = top - bh - 6
+        arriba = True
+        if feet is not None and y < 26:                         # si no cabe arriba, va debajo del personaje
+            y, arriba = int(feet) + 6, False
+        ui_marco(s, x, y, bw, bh, borde=borde, fondo=(18, 24, 44))
+        tx = max(x + 7, min(x + bw - 8, cx))
+        for r in range(4):                                      # colita triangular
+            yo = (y + bh - 2 + r) if arriba else (y + 1 - r)
+            ui_rect(s, borde, tx - (3 - r), yo, 2 * (3 - r) + 1, 1)
+            if r < 3:
+                ui_rect(s, (18, 24, 44), tx - (2 - r), yo, 2 * (2 - r) + 1, 1)
+        for i, (t, c) in enumerate(lineas):
+            s.blit(ui_texto(t, c), (x + 6, y + 3 + 10 * i))
+
+    def _ui_globo_stakeholder(self, s, n, cx, top, feet, en_mapa):
+        conflict = n.get("conflict")
+        if conflict and not self.c_resolved[conflict] and (self.c_alpha[conflict] > 0.5 if en_mapa else self.npc_alpha[n["id"]] > 0.5):
+            lin = [(t, (255, 214, 200)) for t in ui_partir(n["says"], 150)] + [(n["name"], UI_ORO)]
+            self._ui_globo(s, cx, top, lin, borde=UI_ROJO, feet=feet)
+        elif self.npc_alpha[n["id"]] > 0.5:
+            lin = [(t, UI_CREMA) for t in ui_partir(n["name"], 150)] + [(t, UI_ORO) for t in ui_partir(n["role"], 150)]
+            self._ui_globo(s, cx, top, lin, feet=feet)
+        elif n["id"] in self.collected:
+            ui_icono(s, int(cx) - 4, int(top) - 12, ICONO_OK, PAL_OK)    # marca de "identificado"
+
+    def _ui_rayo(self, s, cx, cy):
+        """Rayito de conflicto entre dos stakeholders."""
+        if (self.t // 8) % 4 != 3:
+            ui_icono(s, int(cx) - 4, int(cy) - 5, ICONO_RAYO, PAL_RAYO)
+
+    # --- avisos ----------------------------------------------------------------
+    def _ui_aviso(self, s):
+        """Cinta de aviso arriba al centro: baja, se queda un rato y vuelve a subir."""
+        if self.banner_t <= 0:
+            return
+        texto = self.banner
+        if texto.startswith("Resuelto"):
+            borde, icono, pal = UI_VERDE, ICONO_OK, PAL_OK
+        elif texto.startswith("Conflicto"):
+            borde, icono, pal = UI_ROJO, ICONO_RAYO, PAL_RAYO
+        elif texto.startswith("¡Recorrido"):
+            borde, icono, pal = UI_ORO, ICONO_ESTRELLA, PAL_ESTRELLA
+        elif "identificada" in texto:
+            borde, icono, pal = UI_ORO, ICONO_OK, PAL_OK
+        else:
+            borde, icono, pal = UI_ORO, None, None
+        con_panel = self.scene != "ext" and self.panel_visible      # si el panel está abierto, el aviso va a su izquierda
+        iw = 15 if icono else 0
+        lin = ui_partir(texto, (186 if con_panel else 250) - iw)
+        bw = max(ui_ancho(l) for l in lin) + 16 + iw
+        bh = 10 * len(lin) + 10
+        x = max(4, ((W - 166) if con_panel else W) // 2 - bw // 2)
+        y = 28
+        if self.banner_t > 158:                                 # entra deslizando desde arriba
+            y -= (self.banner_t - 158) * 4
+        elif self.banner_t < 12:                                # y se va hacia arriba
+            y -= (12 - self.banner_t) * 4
+        ui_marco(s, x, y, bw, bh, borde=borde, fondo=(18, 24, 44))
+        if icono:
+            ui_icono(s, x + 7, y + (bh - 9) // 2, icono, pal)
+        for i, l in enumerate(lin):
+            s.blit(ui_texto(l, UI_CREMA), (x + 8 + iw, y + 5 + 10 * i))
+
+    def _ui_mision(self, s):
+        """Cartel de objetivo (solo afuera del hospital y mientras no hay aviso)."""
+        if self.collected or self.banner_t > 0:
+            return
+        lin = [("MISION:", UI_ORO)] + [(l, UI_CREMA) for l in ui_partir("Identifica a los 7 stakeholders", 100)] \
+              + [(l, UI_GRIS) for l in ui_partir("Entra al hospital", 100)]
+        bw = max(ui_ancho(l) for l, _ in lin) + 16
+        ui_marco(s, 4, 28, bw, 10 * len(lin) + 8)
+        for i, (l, c) in enumerate(lin):
+            s.blit(ui_texto(l, c), (12, 32 + 10 * i))
+
+    # --- "Presione E" y ayuda de teclas ----------------------------------------
+    def _ui_prompt(self, s, antes, tecla, despues):
+        """Cartel de abajo: 'Presione [E] para entrar'."""
+        a, b = ui_texto(antes, UI_CREMA), ui_texto(despues, UI_CREMA)
+        bw = a.get_width() + b.get_width() + ui_ancho(tecla) + 6 + 28
+        x, y = (W - bw) // 2, H - 36
+        ui_marco(s, x, y, bw, 20)
+        pulsada = (self.t // 24) % 2 == 1                       # la tecla sube y baja para llamar la atención
+        s.blit(a, (x + 9, y + 6))
+        kx = x + 9 + a.get_width() + 5
+        ui_tecla(s, kx, y + 4, tecla, pulsada)
+        s.blit(b, (kx + ui_ancho(tecla) + 6 + 5, y + 6))
+
+    def _ui_tecla_flotante(self, s, cx, top):
+        """Teclita E que flota sobre la cabeza de tu personaje cuando puedes usar la puerta."""
+        dy = int(math.sin(self.t * 0.12) * 2)
+        x = int(cx) - 6
+        y = int(top) - 22 + dy
+        ui_tecla(s, x, y, "E")
+        ui_rect(s, UI_LINEA, int(cx) - 2, y + 13, 5, 1)
+        ui_rect(s, UI_LINEA, int(cx) - 1, y + 14, 3, 1)
+        ui_rect(s, UI_LINEA, int(cx), y + 15, 1, 1)
+
+    def _ui_ayuda(self, s, mapa):
+        """Cuadrito abajo a la izquierda con las teclas (arriba: moverte, abajo: panel de requisitos)."""
+        teclas = ("W", "A", "S", "D") if mapa else ("A", "D")
+        filas = 2 if self.scene != "ext" else 1
+        w = 8 + len(teclas) * 13 + ui_ancho("MOVER") + 6
+        ui_marco(s, 4, H - 4 - (6 + 14 * filas), w, 6 + 14 * filas, borde=(62, 78, 116), brillo=False)
+        y = H - 4 - (6 + 14 * filas) + 4
+        x = 10
+        for k in teclas:
+            x += ui_tecla(s, x, y, k) + 2
+        s.blit(ui_texto("MOVER", UI_GRIS), (x + 3, y + 2))
+        if filas == 2:
+            kx = ui_tecla(s, 10, y + 14, "TAB")
+            s.blit(ui_texto("PANEL", UI_GRIS), (10 + kx + 5, y + 16))
+
+    # --- dibujo principal de la interfaz -------------------------------------
+    def _ui_actores(self, s):
+        """Globos de los stakeholders, marcas de 'identificado' y rayo de conflicto."""
+        if self.scene == "map":
+            cx, cy = self.cam_mapa()
+            for n in NPCS:
+                nx, ny = self.map_pos(n["id"])
+                sx, top, feet = nx + 16 - cx, ny - cy, ny + 30 - cy
+                if 0 <= sx <= W and 0 <= feet <= H:
+                    self._ui_globo_stakeholder(s, n, sx, top, feet, True)
+            for k, c in CONFLICTS.items():
+                if self.c_alpha[k] > 0.3 and not self.c_resolved[k]:
+                    a, b = (self.npc_by_id[i] for i in c["members"])
+                    ax, ay = self.map_pos(a["id"])
+                    bx, by = self.map_pos(b["id"])
+                    self._ui_rayo(s, (ax + bx) / 2 + 16 - cx, (ay + by) / 2 + 8 - cy + math.sin(self.t * 0.2) * 2)
+        elif self.scene == "sala":
+            info = SALAS[self.sala]
+            n = self.npc_by_id[info["npc"]]
+            self._ui_globo_stakeholder(s, n, info["x"] + SPRITE / 2, GROUND - FEET, None, False)
+
+    def draw_ui(self, screen):
+        self._ui_init()
+        s = self.ui
+        s.fill((0, 0, 0, 0))
+        quien = None                                            # (x, y de la cabeza de tu personaje) para la teclita
+        pregunta = None                                         # texto del cartel "Presione E"
+        if self.scene == "ext":
+            zona = "Exterior · Hospital"
+            if self.trans is None and self.near_door():
+                pregunta = "ENTRAR"
+        elif self.scene == "map":
+            cx, cy = self.cam_mapa()
+            zona = "Hospital · Pasillos"
+            quien = (self.mx + 16 - cx, self.my - cy)
+            if self.trans is None and not self.lock_door and self._puerta_actual():
+                pregunta = "ENTRAR"
+        else:
+            zona = SALAS[self.sala]["name"]
+            quien = (self.px + SPRITE / 2, GROUND - FEET)
+            if self.trans is None and self.px < 34:
+                pregunta = "SALIR"
+
+        self._ui_barra(s, zona)
+        if self.scene == "ext":
+            self._ui_mision(s)
+        else:
+            self._ui_panel(s)
+        self._ui_actores(s)
+        self._ui_aviso(s)
+        if pregunta:
+            if quien:
+                self._ui_tecla_flotante(s, quien[0], quien[1])
+            self._ui_prompt(s, "PRESIONE", "E", "PARA " + pregunta)
+        self._ui_ayuda(s, self.scene == "map")
+        screen.blit(pygame.transform.scale(s, (SCREEN_W, SCREEN_H)), (0, 0))
+
+    def render(self, screen):
+        self._ui_init()
+        self.draw_world()
+        pygame.transform.scale(self.world, (SCREEN_W, SCREEN_H), screen)
+        if self.scene == "ext":
+            screen.blit(self.hospital["open" if self.door_open else "closed"], (self.hosp_x, self.hosp_y))
+        screen.blit(pygame.transform.scale(self.chars, (SCREEN_W, SCREEN_H)), (0, 0))
+        self.draw_ui(screen)
+        if self.fade > 0:                                       # fundido a negro
+            self._fade_surf.set_alpha(int(255 * self.fade))
+            screen.blit(self._fade_surf, (0, 0))
+
 def main():
     pygame.init()
     pygame.display.set_caption("Recorrido de Stakeholders · DIRESA La Libertad")
@@ -1234,6 +1819,9 @@ def main():
                     pygame.display.toggle_fullscreen()
                 elif e.key == pygame.K_e:
                     game.press_e()
+                elif e.key == pygame.K_TAB:
+                    game._ui_init()
+                    game.panel_visible = not game.panel_visible
         k = pygame.key.get_pressed()
         game.update(k[pygame.K_LEFT] or k[pygame.K_a], k[pygame.K_RIGHT] or k[pygame.K_d], k[pygame.K_UP] or k[pygame.K_w], k[pygame.K_DOWN] or k[pygame.K_s])        
         game.render(screen)
