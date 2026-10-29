@@ -13,6 +13,7 @@ SCREEN_W, SCREEN_H = W * SCALE, H * SCALE
 GROUND = 188             # fila donde pisan los pies
 WORLD_W = 2960           # largo total del recorrido (en píxeles internos)
 SPEED = 1.5              # velocidad de caminata
+RUN_MULT = 2.2           # multiplicador para correr / caminar rápido
 PROX = 70                # distancia para "identificar" a un stakeholder
 CONFLICT_PAD = 45
 FRAME_TICKS = 8          # cada cuántos fotogramas cambia el cuadro de caminata
@@ -963,6 +964,7 @@ class Game:
         self.frame = 0
         self.tick = 0
         self.bob = 0.0
+        self.correr_toggle = False
         self.collected = []
         self.npc_alpha = {n["id"]: 0.0 for n in NPCS}
         self.c_alpha = {k: 0.0 for k in CONFLICTS}
@@ -1032,9 +1034,11 @@ class Game:
             if t >= 70:
                 self.trans, self.fade = None, 0.0
 
-    def update(self, left, right):
+    def update(self, left, right, up=False, down=False, run=False):
         self.t += 1
-        vx = (SPEED if right else 0) - (SPEED if left else 0)
+        rapido = run or getattr(self, "correr_toggle", False)
+        vel = SPEED * (RUN_MULT if rapido else 1.0)
+        vx = (vel if right else 0) - (vel if left else 0)
         if self.trans is not None:
             vx = 0
             if self.trans["phase"] in ("open", "fadeout") and self.scene == "ext":
@@ -1044,11 +1048,12 @@ class Game:
             self._update_trans()
         max_x = (W if self.scene == "ext" else WORLD_W) - SPRITE
         self.px = max(0, min(max_x, self.px + vx))
-        self.bob += 0.12
+        self.bob += 0.20 if rapido else 0.12
         if vx:
             self.facing = 1 if vx > 0 else -1
             self.tick += 1
-            if self.tick >= FRAME_TICKS:
+            ticks = max(3, int(FRAME_TICKS / (RUN_MULT if rapido else 1.0)))
+            if self.tick >= ticks:
                 self.tick = 0
                 self.frame = (self.frame + 1) % len(self.player_frames)
         else:
@@ -1313,30 +1318,33 @@ class Game:
             self.sala = None
             self.lock_door = True
 
-    def update(self, left, right, up=False, down=False):
+    def update(self, left, right, up=False, down=False, run=False):
         self.t += 1
         if self.banner_t > 0:
             self.banner_t -= 1
         bloqueado = self.trans is not None
         if bloqueado:
             self._update_trans()
+        rapido = run or getattr(self, "correr_toggle", False)
         if self.scene == "map":
-            self.update_mapa(left, right, up, down, bloqueado)
+            self.update_mapa(left, right, up, down, bloqueado, rapido=rapido)
         else:
-            self.update_lado(left, right, bloqueado)
+            self.update_lado(left, right, bloqueado, rapido=rapido)
 
-    def _animar(self, moviendose):
+    def _animar(self, moviendose, rapido=False):
         if moviendose:
             self.tick += 1
-            if self.tick >= FRAME_TICKS:
+            ticks = max(3, int(FRAME_TICKS / (RUN_MULT if rapido else 1.0)))
+            if self.tick >= ticks:
                 self.tick = 0
                 self.frame = (self.frame + 1) % 4
         else:
             self.tick, self.frame = 0, 0
 
-    def update_lado(self, left, right, bloqueado):
+    def update_lado(self, left, right, bloqueado, rapido=False):
         """Movimiento de lado: la calle (ext) y las salas."""
-        vx = (SPEED if right else 0) - (SPEED if left else 0)
+        vel = SPEED * (RUN_MULT if rapido else 1.0)
+        vx = (vel if right else 0) - (vel if left else 0)
         if bloqueado:
             vx = 0
             tr = self.trans
@@ -1347,8 +1355,8 @@ class Game:
         self.px = max(0, min(W - SPRITE, self.px + vx))
         if vx:
             self.facing = 1 if vx > 0 else -1
-        self._animar(vx != 0)
-        self.bob += 0.12
+        self._animar(vx != 0, rapido)
+        self.bob += 0.20 if rapido else 0.12
         if self.scene == "sala" and not bloqueado:
             self._update_sala()
 
@@ -1374,25 +1382,29 @@ class Game:
         cy = int(max(0, min(self.plano.get_height() - H, self.my + 16 - 120)))
         return cx, cy
 
-    def update_mapa(self, left, right, up, down, bloqueado):
+    def update_mapa(self, left, right, up, down, bloqueado, rapido=False):
         dx = (1 if right else 0) - (1 if left else 0)
         dy = (1 if down else 0) - (1 if up else 0)
         if bloqueado:
             dx = dy = 0
         k = 0.707 if (dx and dy) else 1.0               # en diagonal no corre más rápido
-        vx, vy = dx * MAP_SPEED * k, dy * MAP_SPEED * k
+        vel = MAP_SPEED * (RUN_MULT if rapido else 1.0)
+        vx, vy = dx * vel * k, dy * vel * k
         movio = False
-        if vx and self._libre(self.mx + vx, self.my):   # se mueve por separado en X y en Y
-            self.mx += vx
-            movio = True
-        if vy and self._libre(self.mx, self.my + vy):
-            self.my += vy
-            movio = True
+        pasos = max(1, int(math.ceil(max(abs(vx), abs(vy)))))
+        svx, svy = vx / pasos, vy / pasos
+        for _ in range(pasos):
+            if svx and self._libre(self.mx + svx, self.my):   # se mueve por separado en X y en Y
+                self.mx += svx
+                movio = True
+            if svy and self._libre(self.mx, self.my + svy):
+                self.my += svy
+                movio = True
         if dy:                                          # W = espalda, S = frente, A = izquierda, D = derecha
             self.mdir = "frente" if dy > 0 else "espalda"
         elif dx:
             self.mdir = "derecha" if dx > 0 else "izquierda"
-        self._animar(movio)
+        self._animar(movio, rapido)
 
         pcx, pcy = self.mx + 16, self.my + 22
         for n in NPCS:                                  # nombre sobre el stakeholder cuando pasas cerca
@@ -1680,7 +1692,10 @@ class Game:
             return None
         if key == pygame.K_ESCAPE:
             return "salir"
-        if key == pygame.K_TAB:
+        if key == pygame.K_c:
+            self.correr_toggle = not getattr(self, "correr_toggle", False)
+            self.show_banner("Modo rápido: " + ("ACTIVADO" if self.correr_toggle else "DESACTIVADO"))
+        elif key == pygame.K_TAB:
             self.panel_visible = not self.panel_visible
         elif key == pygame.K_e and self.trans is None:
             if self.cerca_buzon():
@@ -1988,19 +2003,33 @@ class Game:
         ui_rect(s, UI_LINEA, int(cx), y + 15, 1, 1)
 
     def _ui_ayuda(self, s, mapa):
-        """Cuadrito abajo a la izquierda con las teclas (arriba: moverte, abajo: panel)."""
+        """Cuadrito abajo a la izquierda con las teclas (arriba: moverte, medio: correr, abajo: panel)."""
         teclas = ("W", "A", "S", "D") if mapa else ("A", "D")
-        filas = 2 if self.scene != "ext" else 1
-        w = 8 + len(teclas) * 13 + ui_ancho("MOVER") + 6
-        ui_marco(s, 4, H - 4 - (6 + 14 * filas), w, 6 + 14 * filas, borde=(62, 78, 116), brillo=False)
-        y = H - 4 - (6 + 14 * filas) + 4
+        filas = 3 if self.scene != "ext" else 2
+        w_mover = 8 + len(teclas) * 13 + ui_ancho("MOVER") + 6
+        activo = getattr(self, "correr_toggle", False)
+        txt_correr = "CORRER (ON)" if activo else "CORRER"
+        w_correr = 10 + ui_ancho("SHIFT") + 6 + 5 + ui_ancho(txt_correr) + 6
+        w = max(w_mover, w_correr)
+        alto = 6 + 14 * filas
+        ui_marco(s, 4, H - 4 - alto, w, alto, borde=(62, 78, 116), brillo=False)
+        y = H - 4 - alto + 4
         x = 10
         for k in teclas:
             x += ui_tecla(s, x, y, k) + 2
         s.blit(ui_texto("MOVER", UI_GRIS), (x + 3, y + 2))
-        if filas == 2:
-            kx = ui_tecla(s, 10, y + 14, "TAB")
-            s.blit(ui_texto("PANEL", UI_GRIS), (10 + kx + 5, y + 16))
+
+        # Fila correr: SHIFT o C
+        y += 14
+        kx = ui_tecla(s, 10, y, "SHIFT")
+        col = UI_ORO if activo else UI_GRIS
+        s.blit(ui_texto(txt_correr, col), (10 + kx + 5, y + 2))
+
+        # Fila panel
+        if filas == 3:
+            y += 14
+            kx = ui_tecla(s, 10, y, "TAB")
+            s.blit(ui_texto("PANEL", UI_GRIS), (10 + kx + 5, y + 2))
 
     # --- avisos, misión y logro ------------------------------------------------
     def _ui_aviso(self, s):
@@ -2219,11 +2248,13 @@ def main():
                 elif game.tecla(e.key) == "salir":      # E, TAB, ESC y el menú del buzón
                     running = False
         k = pygame.key.get_pressed()
+        corriendo = k[pygame.K_LSHIFT] or k[pygame.K_RSHIFT]
         if game.menu is None:
             game.update(k[pygame.K_LEFT] or k[pygame.K_a], k[pygame.K_RIGHT] or k[pygame.K_d],
-                        k[pygame.K_UP] or k[pygame.K_w], k[pygame.K_DOWN] or k[pygame.K_s])
+                        k[pygame.K_UP] or k[pygame.K_w], k[pygame.K_DOWN] or k[pygame.K_s],
+                        run=corriendo)
         else:
-            game.update(False, False)                     # con el menú abierto no te mueves
+            game.update(False, False, run=False)                     # con el menú abierto no te mueves
         game.render(screen)
         pygame.display.flip()
         clock.tick(60)

@@ -10,8 +10,10 @@ con los stakeholders para conocer su rol y sus necesidades, y observa cómo se r
 conflictos entre ellos. 
 
 ## Controles
-- Flechas o A / D: moverse
-- E: entrar al hospital
+- Flechas o A / D (y W / S en pasillos): moverse
+- Shift o C: caminar / trotar más rápido (mantén Shift o presiona C para alternar)
+- E: entrar al hospital / interactuar / abrir buzón
+- TAB: ver u ocultar panel de stakeholders
 - F11: pantalla completa
 - Esc: salir
 
