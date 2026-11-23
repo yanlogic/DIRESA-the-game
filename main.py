@@ -1,5 +1,6 @@
 import math
 import os
+import random
 import sys
 
 import pygame
@@ -3261,14 +3262,617 @@ class Game:
         screen.blit(pygame.transform.scale(s, (SCREEN_W, SCREEN_H)), (0, 0))
     # ======================== FIN DE LOS CAPÍTULOS 2 Y 3 ========================
 
+    # ======================================================================
+    # PANTALLA DE INICIO + CINEMÁTICA (el juego arranca en "titulo", luego "cine", luego "juego")
+    # ======================================================================
+    fase = "juego"                 # main() la pone en "titulo"; las pruebas arrancan directo en "juego"
+    _render_c23 = render
+    _update_c23 = update
+    _tecla_c23 = tecla
+
+    def iniciar_con_menu(self):
+        self.fase = "titulo"
+        self._ini_init()
+
+    def _ini_init(self):
+        if hasattr(self, "_ti_s"):
+            return
+        self._ui_init()
+        self._c23()
+        self._ti_s = pygame.Surface((W, H))
+        self._ti_fondo = crear_fondo_ciudad()
+        self._ti_sel = 0
+        self._ti_t = 0
+        self._ti_mouse = None
+        self._fade_in = 0
+        self._ti_tapa = pygame.Surface((W, H), pygame.SRCALPHA)
+        p = res("assets/npc_pacientes2_izquierda.png")
+        base = pygame.image.load(p).convert_alpha() if os.path.exists(p) else make_npc_sprite((120, 150, 190), (240, 200, 90), "paciente")
+        self._cine_img = dict(self.npc_sprites)
+        self._cine_img["pacientes2"] = grow(base)
+        self.cine = dict(i=0, t=0, estado="in", e=0, destino=0)
+        self._tit_grande = _texto_grande(TITULO_TXT, 7, UI_ORO, claro=(255, 226, 120))
+        self._tit_sub = _texto_grande(SUBTITULO_TXT, 3, UI_CREMA, claro=(255, 255, 255))
+
+    # --- teclas y mouse -----------------------------------------------------
+    def tecla(self, key):
+        if self.fase == "titulo":
+            self._ini_init()
+            if key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
+                self._ti_sel = 1 - self._ti_sel
+            elif key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE):
+                return self._elegir_inicio(self._ti_sel)
+            elif key == pygame.K_ESCAPE:
+                return "salir"
+            return None
+        if self.fase == "cine":
+            if key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE, pygame.K_RIGHT, pygame.K_d):
+                self._cine_mover(+1)
+            elif key in (pygame.K_a, pygame.K_LEFT):
+                self._cine_mover(-1)
+            elif key == pygame.K_ESCAPE:
+                self._cine_saltar()
+            return None
+        return self._tecla_c23(key)
+
+    def clic(self, pos):
+        """Clic del mouse (pos en píxeles de la ventana de 1152x648)."""
+        if self.fase == "titulo":
+            self._ini_init()
+            mx, my = pos[0] / SCALE, pos[1] / SCALE
+            for i in range(2):
+                if BTN_X <= mx <= BTN_X + BTN_W and BTN_Y[i] <= my <= BTN_Y[i] + BTN_H:
+                    self._ti_sel = i
+                    return self._elegir_inicio(i)
+        elif self.fase == "cine":
+            self._cine_mover(+1)
+        return None
+
+    def _elegir_inicio(self, i):
+        if i == 1:
+            return "salir"
+        self.fase = "cine"
+        self.cine = dict(i=0, t=0, estado="in", e=0, destino=0)
+        return None
+
+    # --- cinemática: avanzar / retroceder -----------------------------------------
+    def _cine_mover(self, d):
+        c = self.cine
+        if c["estado"] != "play":
+            return
+        destino = c["i"] + d
+        if destino < 0:
+            return
+        c["estado"], c["e"], c["destino"] = "out", 0, destino
+
+    def _cine_saltar(self):
+        c = self.cine
+        if c["estado"] == "play" or c["estado"] == "in":
+            c["estado"], c["e"], c["destino"] = "out", 0, len(CINE_ESCENAS) + 1
+
+    def _empezar_juego(self):
+        self.fase = "juego"
+        self._fade_in = 50
+
+    # --- actualizar -----------------------------------------------------------
+    def update(self, left, right, up=False, down=False, run=False):
+        if self.fase == "juego":
+            if getattr(self, "_fade_in", 0) > 0:
+                self._fade_in -= 1
+            return self._update_c23(left, right, up, down, run)
+        self._ini_init()
+        self.t += 1
+        self._ti_t += 1
+        if self.fase == "cine":
+            c = self.cine
+            c["t"] += 1
+            c["e"] += 1 if c["estado"] != "play" else 0
+            if c["estado"] == "in" and c["e"] >= 16:
+                c["estado"] = "play"
+            elif c["estado"] == "out" and c["e"] >= 16:
+                if c["destino"] > len(CINE_ESCENAS):
+                    self._empezar_juego()
+                else:
+                    c["i"], c["t"], c["estado"], c["e"] = c["destino"], 0, "in", 0
+            elif c["estado"] == "play" and c["i"] == len(CINE_ESCENAS) and c["t"] > 220:
+                self._cine_mover(+1)
+
+    # --- dibujar --------------------------------------------------------------
+    def render(self, screen):
+        if self.fase == "juego":
+            self._render_c23(screen)
+            if getattr(self, "_fade_in", 0) > 0:
+                self._fade_surf.set_alpha(int(255 * self._fade_in / 50))
+                screen.blit(self._fade_surf, (0, 0))
+            return
+        self._ini_init()
+        s = self._ti_s
+        if self.fase == "titulo":
+            self._dibujar_titulo(s)
+        else:
+            self._dibujar_cine(s)
+        pygame.transform.scale(s, (SCREEN_W, SCREEN_H), screen)
+
+    def _dibujar_titulo(self, s):
+        f, t = self._ti_fondo, self._ti_t
+        # mouse: si lo mueves encima de un botón, lo selecciona
+        mp = pygame.mouse.get_pos() if pygame.mouse.get_focused() else None
+        if mp is not None and mp != self._ti_mouse:
+            mx, my = mp[0] / SCALE, mp[1] / SCALE
+            for i in range(2):
+                if BTN_X <= mx <= BTN_X + BTN_W and BTN_Y[i] <= my <= BTN_Y[i] + BTN_H:
+                    self._ti_sel = i
+        self._ti_mouse = mp
+        s.blit(f["cielo"], (0, 0))
+        for (x, y, fase) in f["estrellas"]:
+            b = math.sin(t * 0.04 + fase)
+            col = (255, 255, 255) if b > 0.2 else ((170, 176, 220) if b > -0.5 else (96, 100, 150))
+            s.set_at((x, y), col)
+            if b > 0.8:
+                s.set_at((x + 1, y), col)
+                s.set_at((x, y + 1), col)
+        # nubes que pasan despacio
+        for k, (cy, vel, ancho) in enumerate(((58, 0.10, 34), (86, 0.07, 46), (40, 0.05, 28))):
+            cx = int((k * 150 + t * vel) % (W + 80)) - 40
+            col = (120, 84, 150) if k != 2 else (70, 60, 120)
+            pygame.draw.rect(s, col, (cx, cy, ancho, 5))
+            pygame.draw.rect(s, col, (cx + 6, cy - 4, ancho - 14, 5))
+        s.blit(f["lejos"], (-int(t * 0.10) % W - W, 0))
+        s.blit(f["lejos"], (-int(t * 0.10) % W, 0))
+        s.blit(f["medio"], (-int(t * 0.25) % W - W, 0))
+        s.blit(f["medio"], (-int(t * 0.25) % W, 0))
+        s.blit(f["cerca"], (0, 0))
+        # postes de luz
+        for px in f["postes"]:
+            pygame.draw.rect(s, UI_LINEA, (px, 160, 2, 30))
+            pygame.draw.rect(s, UI_LINEA, (px - 3, 158, 8, 3))
+            on = 1 if (t // 90 + px) % 23 else 0.8
+            pygame.draw.rect(s, (255, 232, 150), (px - 2, 161, 6, 2))
+            halo = pygame.Surface((26, 18), pygame.SRCALPHA)
+            pygame.draw.ellipse(halo, (255, 220, 130, int(34 * on)), (0, 0, 26, 18))
+            s.blit(halo, (px - 12, 158))
+        # el carrito que cruza la calle
+        cx = int((t * 0.9) % (W + 260)) - 60
+        pygame.draw.rect(s, UI_LINEA, (cx - 1, 197, 24, 9))
+        pygame.draw.rect(s, (204, 62, 70), (cx, 199, 22, 6))
+        pygame.draw.rect(s, (204, 62, 70), (cx + 5, 196, 11, 4))
+        pygame.draw.rect(s, (170, 220, 245), (cx + 6, 197, 9, 3))
+        pygame.draw.rect(s, UI_LINEA, (cx + 3, 204, 4, 3))
+        pygame.draw.rect(s, UI_LINEA, (cx + 15, 204, 4, 3))
+        pygame.draw.rect(s, (255, 240, 170), (cx + 22, 200, 2, 2))
+        haz = pygame.Surface((22, 8), pygame.SRCALPHA)
+        pygame.draw.polygon(haz, (255, 240, 170, 60), [(0, 3), (22, 0), (22, 8)])
+        s.blit(haz, (cx + 23, 198))
+        # título
+        tit = self._tit_grande
+        s.blit(tit, ((W - tit.get_width()) // 2, 12 + int(math.sin(t * 0.045) * 2)))
+        sub = self._tit_sub
+        yy = 12 + tit.get_height() + 3
+        for lado in (-1, 1):                                    # rayitas a los lados del subtítulo
+            lx = W // 2 + lado * (sub.get_width() // 2 + 8)
+            pygame.draw.rect(s, UI_ORO_OSC, (lx if lado > 0 else lx - 36, yy + sub.get_height() // 2 - 1, 36, 2))
+            pygame.draw.rect(s, UI_ORO, (lx if lado > 0 else lx - 36, yy + sub.get_height() // 2 - 2, 36, 1))
+        s.blit(sub, ((W - sub.get_width()) // 2, yy))
+        # botones
+        for i, nombre in enumerate(BOTONES_INICIO):
+            sel = (i == self._ti_sel)
+            y = BTN_Y[i] + (1 if sel and (t // 20) % 2 else 0)
+            ui_marco(s, BTN_X, y, BTN_W, BTN_H, borde=UI_ORO if sel else (62, 78, 116),
+                     fondo=UI_FONDO2 if sel else UI_FONDO, brillo=sel)
+            tx = ui_texto(nombre, UI_CREMA if sel else UI_GRIS)
+            s.blit(tx, (BTN_X + (BTN_W - tx.get_width()) // 2, y + 4))
+            if sel:
+                fl = 2 if (t // 16) % 2 else 0
+                for lado in (0, 1):
+                    ax = BTN_X + 8 - fl if lado == 0 else BTN_X + BTN_W - 12 + fl
+                    pts = [(ax, y + 4), (ax, y + 12), (ax + 4, y + 8)] if lado == 0 else [(ax + 4, y + 4), (ax + 4, y + 12), (ax, y + 8)]
+                    pygame.draw.polygon(s, UI_ORO, pts)
+        pie = ui_texto("ACORI Y. · CANDIOTTI M. · GAITAN G.", UI_CREMA)
+        s.blit(pie, ((W - pie.get_width()) // 2, 184))
+        pie2 = ui_texto("CIIN1252P · INGENIERÍA DE SOFTWARE", UI_GRIS)
+        s.blit(pie2, (6, H - 12))
+        pie3 = ui_texto("W S · E ELEGIR", UI_GRIS)
+        s.blit(pie3, (W - pie3.get_width() - 6, H - 12))
+
+    # --- cinemática ---------------------------------------------------------
+    def _c_npc(self, s, key, x, dy=0, flip=False):
+        img = self._cine_img[key]
+        if flip:
+            img = pygame.transform.flip(img, True, False)
+        self._shadow(s, x + SPRITE // 2, GROUND + 1)
+        s.blit(img, (int(x), GROUND - FEET + int(dy)))
+
+    def _dibujar_cine(self, s):
+        c = self.cine
+        i, t = c["i"], c["t"]
+        if i < len(CINE_ESCENAS):
+            getattr(self, "_cine_" + CINE_ESCENAS[i])(s, t)
+            # puntitos de avance + ayuda
+            n = len(CINE_ESCENAS)
+            x0 = 6
+            for k in range(n):
+                col = UI_ORO if k == i else (62, 78, 116)
+                pygame.draw.rect(s, UI_LINEA, (x0 + k * 8 - 1, H - 10, 7, 7))
+                pygame.draw.rect(s, col, (x0 + k * 8, H - 9, 5, 5))
+            ayu = ui_texto("E SIGUIENTE · ESC SALTAR", UI_GRIS)
+            s.blit(ayu, (W - ayu.get_width() - 5, H - 11))
+        else:
+            s.fill((8, 10, 22))
+            a = _texto_grande(CAPITULO1_TARJETA[0], 3, UI_ORO, claro=(255, 226, 120))
+            s.blit(a, ((W - a.get_width()) // 2, 78))
+            b = ui_texto(CAPITULO1_TARJETA[1], UI_CREMA)
+            b = pygame.transform.scale(b, (b.get_width() * 2, b.get_height() * 2))
+            s.blit(b, ((W - b.get_width()) // 2, 118))
+        al = 0
+        if c["estado"] == "in":
+            al = 255 * (1 - c["e"] / 16)
+        elif c["estado"] == "out":
+            al = 255 * min(1, c["e"] / 16)
+        if al > 0:
+            self._ti_tapa.fill((0, 0, 0, int(al)))
+            s.blit(self._ti_tapa, (0, 0))
+
+    def _cine_escena1_fondo(self, s, sala):
+        s.blit(self.salas[sala], (0, 0))
+
+    # Escena 1: Admisión. Todo a mano, los papeles se amontonan y los pacientes esperan.
+    def _cine_admision(self, s, t):
+        s.blit(self.salas["admision"], (0, 0))
+        ciclo = t % 1000
+        n = min(15, ciclo // 50)
+        rnd = random.Random(5)
+        for k in range(n):                                       # montón de hojas sobre el mostrador
+            jx = rnd.randrange(-4, 5)
+            col = (250, 250, 246) if k % 2 else (236, 240, 248)
+            pygame.draw.rect(s, UI_LINEA, (213 + jx, 141 - k * 2 - 1, 24, 4))
+            pygame.draw.rect(s, col, (213 + jx + 1, 141 - k * 2, 22, 2))
+        if n >= 11:                                              # se cae una hoja de vez en cuando
+            for q in range(2):
+                p = (t + q * 45) % 90
+                _c_hoja(s, 236 + int(math.sin(p * 0.12 + q) * 7) + p // 6, 118 + p * 0.78, 8, 10)
+        mj = self.npc_by_id["mariajose"]
+        self._c_npc(s, "mariajose", 108, -((t // 9) % 2), flip=True)
+        self._particulas(s, mj, 108 + SPRITE // 2, GROUND - FEET, 2)
+        # escribiendo a mano en su cuaderno
+        _c_cuaderno(s, 138, 166, 22, 15)
+        lx = 150 + int(math.sin(t * 0.5) * 4)
+        pygame.draw.line(s, UI_LINEA, (lx, 166), (lx - 5, 158), 3)
+        pygame.draw.line(s, (240, 200, 60), (lx, 166), (lx - 5, 158), 1)
+        if 110 < t % 260 < 230:
+            _c_globo(s, 108 + SPRITE // 2 + 4, GROUND - FEET - 17, "?", (200, 60, 70))
+        # los pacientes esperando
+        _ = self._c_npc(s, "yasuri", 288, -((t // 28) % 2), flip=False)
+        self._c_npc(s, "pacientes2", 330, -(((t + 14) // 28) % 2), flip=False)
+        if (t // 100) % 2:
+            _c_globo(s, 288 + SPRITE // 2, GROUND - FEET - 17, "", puntos=(t // 15) % 4)
+        # cartelito de lugar
+        ui_marco(s, 6, 6, ui_ancho("DIRESA LA LIBERTAD · CENTRO DE SALUD") + 12, 14, borde=UI_ORO)
+        s.blit(ui_texto("DIRESA LA LIBERTAD · CENTRO DE SALUD", UI_CREMA), (12, 9))
+
+    # Escena 2: Consultorio. Dos historiales del mismo paciente que no coinciden.
+    def _cine_consultorio(self, s, t):
+        s.blit(self.salas["consultorio"], (0, 0))
+        ciclo = t % 560
+        jer = self.npc_by_id["jeremy"]
+        if ciclo < 110:                                         # busca entre los cuadernos
+            xj = 175 + math.sin(ciclo * 0.07) * 28
+            flip = math.cos(ciclo * 0.07) > 0
+            self._c_npc(s, "jeremy", xj, -((ciclo // 8) % 2), flip=flip)
+        else:
+            self._c_npc(s, "jeremy", 168, -((t // 40) % 2), flip=True)
+        if ciclo < 110:
+            self._particulas(s, jer, xj + SPRITE // 2, GROUND - FEET, 2)
+        for k, (x_fin, x_ini, ini, texto, dni) in enumerate(((106, -70, 110, "PEREZ JUAN", "DNI 4821"),
+                                                              (216, 390, 190, "PEREZ J.", "DNI 4812"))):
+            if ciclo >= ini:
+                p = min(1.0, (ciclo - ini) / 40)
+                p = 1 - (1 - p) ** 3
+                x = int(x_ini + (x_fin - x_ini) * p)
+                _c_hoja(s, x, 72, 64, 44, lineas=0)
+                s.blit(ui_texto(texto, UI_LINEA, sombra=None), (x + 4, 77))
+                s.blit(ui_texto(dni, (60, 80, 150), sombra=None), (x + 4, 87))
+                for q in range(3):
+                    pygame.draw.rect(s, (150, 156, 176), (x + 4, 98 + q * 5, 56 - q * 8, 1))
+                tinta = (200, 60, 70) if k else (60, 80, 150)
+                pygame.draw.rect(s, tinta, (x + 4, 112 - 0, 12, 1))
+        if ciclo >= 235:
+            pop = 1 + (0.25 if ciclo < 255 else 0)
+            _c_no_igual(s, 195, 94, 2)
+        if ciclo >= 280:
+            _c_globo(s, 168 + SPRITE // 2 - 3, GROUND - FEET - 17, "!", (200, 60, 70))
+
+    # Escena 3: Farmacia. El cuaderno dice una cosa y el estante otra.
+    def _cine_farmacia(self, s, t):
+        s.blit(self.salas["farmacia"], (0, 0))
+        ciclo = t % 620
+        pat = self.npc_by_id["patroclo"]
+        self._c_npc(s, "patroclo", 76, -((t // 14) % 2) if ciclo < 300 else (-3 if (t // 12) % 2 else 0), flip=True)
+        self._particulas(s, pat, 76 + SPRITE // 2, GROUND - FEET, 2)
+        cuantas = min(9, ciclo // 28)
+        for k in range(cuantas):                                 # cuenta las cajas del estante
+            _c_caja(s, 150 + k * 13, 124, k)
+        # lo que dice el cuaderno
+        if ciclo >= 30:
+            _c_hoja(s, 62, 52, 56, 44, lineas=0)
+            _c_cuaderno(s, 70, 56, 22, 12)
+            n12 = ui_texto("12", UI_LINEA, sombra=None)
+            s.blit(pygame.transform.scale(n12, (n12.get_width() * 3, n12.get_height() * 3)), (74, 70))
+        # lo que hay en el estante
+        if ciclo >= 290:
+            _c_hoja(s, 268, 52, 56, 44, lineas=0)
+            _c_caja(s, 276, 58, 0)
+            n9 = ui_texto("9", UI_LINEA, sombra=None)
+            s.blit(pygame.transform.scale(n9, (n9.get_width() * 3, n9.get_height() * 3)), (294, 70))
+        if ciclo >= 340:
+            _c_no_igual(s, 196, 76, 2)
+        if ciclo >= 390:
+            _c_globo(s, 76 + SPRITE // 2 - 3, GROUND - FEET - 17, "?", (200, 60, 70))
+
+    # Escena 4: Sistemas TI. Archivos de Excel por todos lados.
+    def _cine_admin(self, s, t):
+        s.blit(self.salas["admin"], (0, 0))
+        ciclo = t % 560
+        # pantallas con hojas de cálculo
+        for mx0 in (249, 291):
+            pygame.draw.rect(s, (236, 244, 236), (mx0 + 2, 123, 31, 16))
+            pygame.draw.rect(s, (46, 140, 78), (mx0 + 2, 123, 31, 3))
+            for gx in range(mx0 + 2, mx0 + 33, 6):
+                pygame.draw.rect(s, (150, 186, 156), (gx, 126, 1, 13))
+            for gy in range(129, 139, 4):
+                pygame.draw.rect(s, (150, 186, 156), (mx0 + 2, gy, 31, 1))
+            if (t // 10) % 3 == 0:
+                pygame.draw.rect(s, (255, 226, 130), (mx0 + 8 + (t // 10) % 5 * 5, 130, 6, 3))
+        destinos = [(96, 52), (136, 40), (176, 58), (214, 44), (126, 84), (170, 96), (214, 86), (250, 66)]
+        for k, (dx, dy) in enumerate(destinos):                   # los archivos salen volando del archivero
+            ini = 30 + k * 42
+            if ciclo < ini:
+                continue
+            p = min(1.0, (ciclo - ini) / 36)
+            p = 1 - (1 - p) ** 2
+            x = 90 + (dx - 90) * p
+            y = 140 + (dy - 140) * p - math.sin(p * 3.14) * 18
+            flot = math.sin(t * 0.05 + k) * 2 if p >= 1 else 0
+            _c_archivo(s, int(x), int(y + flot))
+        leo = self.npc_by_id["leonidas"]
+        self._c_npc(s, "leonidas", 214, -((t // 5) % 2), flip=True)
+        self._particulas(s, leo, 214 + SPRITE // 2, GROUND - FEET, 2)
+        if ciclo >= 380:
+            _c_globo(s, 214 + SPRITE // 2 - 3, GROUND - FEET - 17, "!", (200, 60, 70))
+
+    # Escena 5: Administración. El reporte nunca llega a tiempo.
+    def _cine_direccion(self, s, t):
+        s.blit(self.salas["direccion"], (0, 0))
+        ciclo = t % 560
+        ari = self.npc_by_id["arian"]
+        golpe = -1 if (t // 14) % 2 else 0
+        self._c_npc(s, "arian", 150, golpe, flip=True)
+        self._particulas(s, ari, 150 + SPRITE // 2, GROUND - FEET, 2)
+        # calendario que pasa los días
+        dia = min(30, 1 + ciclo // 9)
+        temblor = (1 if (t // 3) % 2 else -1) if dia >= 30 else 0
+        cx0 = 258 + temblor
+        pygame.draw.rect(s, UI_LINEA, (cx0 - 1, 52, 52, 56))
+        pygame.draw.rect(s, (250, 250, 246), (cx0, 53, 50, 54))
+        pygame.draw.rect(s, (214, 60, 70), (cx0, 53, 50, 11))
+        for rx in (cx0 + 8, cx0 + 38):
+            pygame.draw.rect(s, UI_LINEA, (rx, 49, 3, 8))
+        num = ui_texto(str(dia), UI_LINEA, sombra=None)
+        num = pygame.transform.scale(num, (num.get_width() * 4, num.get_height() * 4))
+        s.blit(num, (cx0 + (50 - num.get_width()) // 2, 70))
+        # el reporte vacío en la mesa
+        _c_hoja(s, 206, 126, 20, 26, lineas=0)
+        for q in range(2):
+            pygame.draw.rect(s, (200, 204, 216), (209, 130 + q * 4, 14, 1))
+        if ciclo >= 300:
+            _c_globo(s, 150 + SPRITE // 2 - 3, GROUND - FEET - 17, "!", (200, 60, 70))
+            _c_equis(s, 216, 140, 2)
+
+    # Escena 6: Reuniones. El MINSA no puede comprobar nada.
+    def _cine_reuniones(self, s, t):
+        s.blit(self.salas["reuniones"], (0, 0))
+        ciclo = t % 560
+        sel = min(3, ciclo // 90)
+        for k, x in enumerate((196, 236, 276)):
+            alto = 4 if (sel == k and ciclo % 90 > 8) else 0
+            _c_hoja(s, x, 119 - alto, 22, 24, lineas=3)
+            if sel > k or (sel == k and ciclo % 90 > 40):
+                _c_equis(s, x + 11, 113 - alto, 2)
+        self._c_npc(s, "carmen", 128, 0, flip=True if (ciclo < 270 or (ciclo // 18) % 2) else False)
+        if ciclo >= 290:
+            _c_globo(s, 128 + SPRITE // 2 - 3, GROUND - FEET - 17, "?", (200, 60, 70))
+
+
+# ============================================================================
+# PANTALLA DE INICIO (menú + ciudad) Y CINEMÁTICA DEL CONTEXTO PROBLEMÁTICO
+# ============================================================================
+TITULO_TXT = "DIRESA"
+SUBTITULO_TXT = "THE GAME"
+BOTONES_INICIO = ("JUGAR", "SALIR")
+BTN_X, BTN_W, BTN_H = 144, 96, 17
+BTN_Y = (142, 163)                       # arriba de cada botón (en píxeles internos 384x216)
+
+# Cinemática: cada escena es una sala con su stakeholder haciendo lo suyo (casi sin texto).
+CINE_ESCENAS = ["admision", "consultorio", "farmacia", "admin", "direccion", "reuniones"]
+CAPITULO1_TARJETA = ("CAPÍTULO 1", "EL CENTRO DE SALUD DE PAPEL")
+
+
+def _lerp_c(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def _texto_grande(txt, esc, color, claro=None, borde=UI_LINEA):
+    """Texto pixel art grande, con contorno oscuro, sombra abajo y brillo arriba."""
+    base = ui_texto(txt, color, sombra=None).subsurface((0, 2, ui_ancho(txt) + 2, 7)).copy()
+    w, h = base.get_width() * esc, base.get_height() * esc
+    big = pygame.transform.scale(base, (w, h))
+    sil = pygame.mask.from_surface(big).to_surface(setcolor=tuple(borde) + (255,), unsetcolor=(0, 0, 0, 0))
+    out = pygame.Surface((w + esc * 4, h + esc * 5), pygame.SRCALPHA)
+    ox, oy = esc * 2, esc * 2
+    for dx in (-esc, 0, esc):
+        for dy in (-esc, 0, esc):
+            out.blit(sil, (ox + dx, oy + dy))
+    out.blit(sil, (ox, oy + esc * 2))
+    out.blit(big, (ox, oy))
+    if claro:
+        luz = pygame.transform.scale(ui_texto(txt, claro, sombra=None).subsurface((0, 2, ui_ancho(txt) + 2, 7)).copy(), (w, h))
+        out.blit(luz, (ox, oy), area=(0, 0, w, esc * 3))
+    return out
+
+
+def crear_fondo_ciudad():
+    """Dibuja (una sola vez) el cielo, las capas de edificios y la calle de la pantalla de inicio."""
+    import random
+    r = random.Random(11)
+    cielo = pygame.Surface((W, H))
+    paradas = [(0.0, (10, 14, 40)), (0.35, (30, 32, 84)), (0.58, (96, 54, 118)),
+               (0.80, (214, 104, 112)), (1.0, (255, 176, 112))]
+    for y in range(0, H, 3):
+        f = min(1.0, y / 165)
+        for (f0, c0), (f1, c1) in zip(paradas, paradas[1:]):
+            if f0 <= f <= f1:
+                col = _lerp_c(c0, c1, (f - f0) / (f1 - f0))
+                break
+        pygame.draw.rect(cielo, col, (0, y, W, 3))
+    estrellas = [(r.randrange(W), r.randrange(0, 95), r.random() * 6.28) for _ in range(70)]
+    # luna
+    pygame.draw.circle(cielo, (244, 240, 214), (352, 30), 13)
+    pygame.draw.circle(cielo, (222, 216, 190), (347, 26), 3)
+    pygame.draw.circle(cielo, (222, 216, 190), (357, 36), 2)
+    pygame.draw.circle(cielo, (228, 224, 198), (356, 24), 2)
+
+    def capa(color, hmin, hmax, base, luz, prob, azotea):
+        s = pygame.Surface((W * 2, H), pygame.SRCALPHA)
+        x = 0
+        while x < W:
+            ancho = min(r.randrange(16, 34), W - x)
+            if W - x < 16:
+                ancho = W - x
+            alto = r.randrange(hmin, hmax)
+            top = base - alto
+            for dx in (0, W):
+                pygame.draw.rect(s, color, (x + dx, top, ancho, alto + 40))
+                if azotea and r.random() < 0.4:                      # antenita
+                    pygame.draw.rect(s, color, (x + dx + ancho // 2, top - 6, 1, 6))
+            for wy in range(top + 5, base - 4, 7):
+                for wx in range(x + 3, x + ancho - 3, 6):
+                    if r.random() < prob:
+                        c = luz if r.random() < 0.8 else (255, 236, 170)
+                        for dx in (0, W):
+                            pygame.draw.rect(s, c, (wx + dx, wy, 3, 3))
+            x += ancho
+        return s
+
+    lejos = capa((62, 46, 104), 36, 84, 172, (170, 122, 150), 0.18, False)
+    medio = capa((36, 30, 74), 56, 118, 178, (255, 204, 108), 0.34, True)
+
+    cerca = pygame.Surface((W, H), pygame.SRCALPHA)
+    # edificio oscuro a la izquierda
+    pygame.draw.rect(cerca, (22, 24, 50), (0, 92, 58, 100))
+    pygame.draw.rect(cerca, (30, 32, 62), (0, 92, 58, 4))
+    for wy in range(102, 182, 12):
+        for wx in (7, 24, 41):
+            c = (255, 208, 112) if r.random() < 0.55 else (46, 52, 90)
+            pygame.draw.rect(cerca, c, (wx, wy, 8, 7))
+    # el centro de salud (a la derecha)
+    cx0, cy0, cw, ch = 292, 118, 84, 70
+    pygame.draw.rect(cerca, (18, 20, 44), (cx0 - 2, cy0 - 2, cw + 4, ch + 4))
+    pygame.draw.rect(cerca, (222, 226, 238), (cx0, cy0, cw, ch))
+    pygame.draw.rect(cerca, (186, 192, 214), (cx0, cy0, cw, 6))
+    pygame.draw.rect(cerca, (186, 192, 214), (cx0, cy0 + ch - 8, cw, 8))
+    for wx in (cx0 + 8, cx0 + 30, cx0 + 52, cx0 + 70):
+        pygame.draw.rect(cerca, (18, 20, 44), (wx - 1, cy0 + 14, 12, 14))
+        pygame.draw.rect(cerca, (255, 226, 150), (wx, cy0 + 15, 10, 12))
+        pygame.draw.rect(cerca, (222, 226, 238), (wx + 4, cy0 + 15, 1, 12))
+    pygame.draw.rect(cerca, (18, 20, 44), (cx0 + 30, cy0 + 40, 24, 30))
+    pygame.draw.rect(cerca, (110, 170, 214), (cx0 + 32, cy0 + 42, 9, 28))
+    pygame.draw.rect(cerca, (110, 170, 214), (cx0 + 43, cy0 + 42, 9, 28))
+    # cartel con la cruz roja
+    pygame.draw.rect(cerca, (18, 20, 44), (cx0 + 28, cy0 - 18, 28, 18))
+    pygame.draw.rect(cerca, (250, 250, 250), (cx0 + 30, cy0 - 16, 24, 14))
+    pygame.draw.rect(cerca, (214, 48, 58), (cx0 + 40, cy0 - 14, 4, 10))
+    pygame.draw.rect(cerca, (214, 48, 58), (cx0 + 37, cy0 - 11, 10, 4))
+    # vereda y calle
+    pygame.draw.rect(cerca, (74, 76, 104), (0, 188, W, 6))
+    pygame.draw.rect(cerca, (46, 48, 72), (0, 188, W, 1))
+    pygame.draw.rect(cerca, (32, 32, 52), (0, 194, W, H - 194))
+    for x in range(0, W, 32):
+        pygame.draw.rect(cerca, (120, 120, 140), (x + 6, 206, 16, 2))
+    return dict(cielo=cielo, estrellas=estrellas, lejos=lejos, medio=medio, cerca=cerca, postes=(30, 150, 270, 372))
+
+
+# ---- dibujitos para la cinemática ----------------------------------------------------------------
+def _c_hoja(s, x, y, w=9, h=11, color=(250, 250, 246), lineas=3, lc=(150, 156, 176)):
+    pygame.draw.rect(s, UI_LINEA, (x - 1, y - 1, w + 2, h + 2))
+    pygame.draw.rect(s, color, (x, y, w, h))
+    for k in range(lineas):
+        yy = y + 2 + k * 3
+        if yy < y + h - 1:
+            pygame.draw.rect(s, lc, (x + 1, yy, w - 3 - (k % 2) * 2, 1))
+
+
+def _c_globo(s, cx, top, glyph, col=UI_LINEA, puntos=None):
+    """Globito de pensamiento con '?', '!' o '...'. cx = centro, top = arriba."""
+    x, w, h = int(cx) - 8, 17, 13
+    pygame.draw.rect(s, UI_LINEA, (x, top, w, h))
+    pygame.draw.rect(s, (252, 252, 250), (x + 1, top + 1, w - 2, h - 2))
+    pygame.draw.rect(s, UI_LINEA, (x + 6, top + h, 3, 2))
+    pygame.draw.rect(s, (252, 252, 250), (x + 7, top + h - 1, 1, 1))
+    if puntos is not None:
+        for k in range(puntos):
+            pygame.draw.rect(s, UI_LINEA, (x + 4 + k * 4, top + 8, 2, 2))
+    else:
+        g = ui_texto(glyph, col, sombra=None)
+        s.blit(g, (x + (w - (g.get_width() - 2)) // 2 - 0, top + 1))
+
+
+def _c_no_igual(s, cx, cy, esc=1, col=(228, 70, 70)):
+    for dx, dy, c in ((1, 1, UI_LINEA), (0, 0, col)):
+        pygame.draw.rect(s, c, (cx - 6 * esc + dx, cy - 4 * esc + dy, 12 * esc, 2 * esc))
+        pygame.draw.rect(s, c, (cx - 6 * esc + dx, cy + 1 * esc + dy, 12 * esc, 2 * esc))
+        pygame.draw.line(s, c, (cx + 4 * esc + dx, cy - 8 * esc + dy), (cx - 4 * esc + dx, cy + 8 * esc + dy), max(2, esc * 2))
+
+
+def _c_equis(s, cx, cy, esc=1, col=(228, 70, 70)):
+    for dx, dy, c in ((1, 1, UI_LINEA), (0, 0, col)):
+        pygame.draw.line(s, c, (cx - 4 * esc + dx, cy - 4 * esc + dy), (cx + 4 * esc + dx, cy + 4 * esc + dy), max(2, esc * 2))
+        pygame.draw.line(s, c, (cx + 4 * esc + dx, cy - 4 * esc + dy), (cx - 4 * esc + dx, cy + 4 * esc + dy), max(2, esc * 2))
+
+
+def _c_cuaderno(s, x, y, w=22, h=15):
+    pygame.draw.rect(s, UI_LINEA, (x - 1, y - 1, w + 2, h + 2))
+    pygame.draw.rect(s, (176, 124, 76), (x, y, w, h))
+    pygame.draw.rect(s, (250, 248, 238), (x + 1, y + 1, w // 2 - 1, h - 2))
+    pygame.draw.rect(s, (250, 248, 238), (x + w // 2 + 1, y + 1, w // 2 - 2, h - 2))
+    for k in range(3):
+        pygame.draw.rect(s, (130, 140, 170), (x + 2, y + 3 + k * 4, w // 2 - 4, 1))
+        pygame.draw.rect(s, (130, 140, 170), (x + w // 2 + 2, y + 3 + k * 4, w // 2 - 5, 1))
+
+
+def _c_archivo(s, x, y, ang=0):
+    """Archivito de Excel (hoja con una X verde)."""
+    pygame.draw.rect(s, UI_LINEA, (x - 1, y - 1, 13, 15))
+    pygame.draw.rect(s, (250, 250, 246), (x, y, 11, 13))
+    pygame.draw.rect(s, (46, 140, 78), (x, y, 11, 4))
+    pygame.draw.line(s, (46, 140, 78), (x + 3, y + 6), (x + 7, y + 11), 1)
+    pygame.draw.line(s, (46, 140, 78), (x + 7, y + 6), (x + 3, y + 11), 1)
+
+
+def _c_caja(s, x, y, tono=0):
+    col = ((236, 240, 244), (200, 232, 210), (240, 226, 200))[tono % 3]
+    pygame.draw.rect(s, UI_LINEA, (x - 1, y - 1, 13, 12))
+    pygame.draw.rect(s, col, (x, y, 11, 10))
+    pygame.draw.rect(s, (60, 160, 90), (x + 4, y + 2, 3, 6))
+    pygame.draw.rect(s, (60, 160, 90), (x + 2, y + 4, 7, 2))
+
 
 def main():
     pygame.init()
-    pygame.display.set_caption("Recorrido de Stakeholders · DIRESA La Libertad")
+    pygame.display.set_caption("DIRESA: The Game")
     flags = pygame.SCALED | pygame.RESIZABLE
     screen = pygame.display.set_mode((SCREEN_W, SCREEN_H), flags)
     clock = pygame.time.Clock()
     game = Game()
+    game.iniciar_con_menu()
     running = True
     while running:
         for e in pygame.event.get():
@@ -3278,6 +3882,9 @@ def main():
                 if e.key == pygame.K_F11:
                     pygame.display.toggle_fullscreen()
                 elif game.tecla(e.key) == "salir":      # E, TAB, ESC y el menú del buzón
+                    running = False
+            elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                if game.clic(e.pos) == "salir":
                     running = False
         k = pygame.key.get_pressed()
         corriendo = k[pygame.K_LSHIFT] or k[pygame.K_RSHIFT]
