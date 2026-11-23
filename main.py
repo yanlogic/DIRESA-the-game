@@ -44,52 +44,64 @@ ZONES = [
     dict(name="Dirección · DIRESA", x0=2400, x1=2960, wall=(244, 230, 232), dado=(176, 110, 124), floor=(222, 200, 204)),
 ]
 
-# kind: aspecto del muñequito de prueba (hasta que tengas su PNG)
-# poder / interes / cuadrante: Tabla 6 del informe (2.4 Matriz de poder/interés)
-# actividad: lo que hace el personaje en el hospital (baila, signos, pasea, teclea, inspecciona, acomoda, telefono)
-# need y says se guardan para los capítulos de requisitos y conflictos
+# Los 8 stakeholders de la Tabla 7 del informe (2.4 Matriz de poder/interés).
+# name = encargado · role = stakeholder · poder / interes / cuadrante = Tabla 7
+# actividad: lo que hace el personaje en el centro de salud
+#   (telefono, teclea, inspecciona, pasea, archiva, signos, acomoda, baila)
+# need: lo que necesita (para el capítulo de requisitos) · says + conflict: Tablas 8, 9 y 10
+# kind: aspecto del muñequito de prueba (solo si falta su PNG)
 NPCS = [
-    dict(id="diresa",   x=2760, name="DIRESA La Libertad", role="Patrocinador del proyecto",
+    dict(id="arian",     x=2760, name="Sr. Arian Juan de Dios", role="Administración",
          poder="Alto", interes="Alto", cuadrante="Gestionar de cerca", actividad="telefono",
-         need="Decide qué módulos se priorizan",
+         need="Decidir qué 2 de los 5 módulos se priorizan",
          body=(122, 34, 48), accent=(75, 22, 32), kind="suit"),
-    dict(id="admin",    x=1560, name="Equipo de TI / Administración", role="Administración de sistemas",
+    dict(id="leonidas",  x=1560, name="Ing. Leonidas Paredes", role="Equipo de TI",
          poder="Alto", interes="Alto", cuadrante="Gestionar de cerca", actividad="teclea",
-         need="Trazabilidad legal (NTS 139)",
-         body=(92, 92, 110), accent=(54, 54, 63), kind="suit", conflict="c1",
-         says="¡Todo cambio debe quedar registrado!"),
-    dict(id="minsa",    x=2400, name="MINSA", role="Órgano rector (NTS 139)",
+         need="Seguridad de los datos de salud (Ley 29733)",
+         body=(52, 58, 70), accent=(30, 34, 44), kind="suit", conflict="c3",
+         says="¡Los datos de salud no pueden quedar expuestos!"),
+    dict(id="carmen",    x=2400, name="Sra. Carmen Ochoa", role="MINSA",
          poder="Alto", interes="Medio", cuadrante="Mantener satisfecho", actividad="inspecciona",
-         need="Cumplimiento de la NTS 139",
-         body=(44, 92, 128), accent=(28, 58, 84), kind="suit"),
-    dict(id="jeremy",   x=1330, name="Dr. Jeremy Armas", role="Médico General",
+         need="Cumplir la NTS 139 de historias clínicas",
+         body=(70, 74, 96), accent=(46, 48, 64), kind="suit", conflict="c1",
+         says="¡La norma no permite borrar registros!"),
+    dict(id="jeremy",    x=1330, name="Dr. Jeremy Armas", role="Médico general",
          poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="pasea",
-         need="Rapidez: atender en 5 clics o menos",
+         need="Registrar la atención y el diagnóstico CIE-10 rápido",
          body=(238, 241, 241), accent=(154, 167, 167), kind="doctor", conflict="c1",
-         says="¡Necesito atender rápido, en 5 clics!"),
-    dict(id="sara",     x=840,  name="Sra. Sara Acuy", role="Enfermería (Triaje)",
+         says="¡Necesito corregir rápido, en 5 clics!"),
+    dict(id="mariajose", x=300,  name="Sra. María José", role="Personal de admisión",
+         poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="archiva",
+         need="Abrir la historia con DNI o con un código temporal",
+         body=(138, 96, 178), accent=(104, 70, 140), kind="normal"),
+    dict(id="sara",      x=840,  name="Sra. Sara Acuy", role="Enfermería",
          poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="signos",
-         need="Registro rápido de signos vitales",
-         body=(47, 158, 143), accent=(30, 106, 96), kind="nurse"),
-    dict(id="farmacia", x=1980, name="Técnico de Farmacia", role="Dispensación de recetas",
+         need="Registrar los signos vitales en el triaje",
+         body=(47, 158, 143), accent=(30, 106, 96), kind="nurse", conflict="c3",
+         says="¡No quiero perder lo registrado si se corta la conexión!"),
+    dict(id="patroclo",  x=1980, name="Sr. Patroclo Suarez", role="Técnico de farmacia",
          poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="acomoda",
-         need="Control estricto del kárdex",
+         need="Dispensar las recetas sin el cuaderno",
          body=(79, 143, 63), accent=(47, 92, 38), kind="apron", conflict="c2",
-         says="¡Cada salida debe ir al kárdex!"),
-    dict(id="patroclo", x=300,  name="Sr. Patroclo Suarez", role="Paciente",
+         says="¡Cada salida debe descontarse del stock!"),
+    dict(id="yasuri",    x=2200, name="Yasuri Yamileth", role="Pacientes (representante)",
          poder="Bajo", interes="Bajo", cuadrante="Monitorear", actividad="baila",
-         need="Atención sin errores de transcripción",
-         body=(68, 114, 168), accent=(44, 79, 120), kind="normal", conflict="c2",
+         need="Ser atendida sin demoras",
+         body=(226, 168, 52), accent=(160, 110, 30), kind="normal", conflict="c2",
          says="¡No queremos hacer cola!"),
 ]
 
+# Conflictos de la sección 2.5 (Tablas 8, 9 y 10). En el Capítulo 1 están apagados.
 CONFLICTS = {
-    "c1": dict(members=("jeremy", "admin"),
+    "c1": dict(members=("jeremy", "carmen"),
                label="Médicos vs. Administración/MINSA",
-               resolution="Resuelto: Inmutabilidad + Adenda Ágil (4.85/5, consenso)"),
-    "c2": dict(members=("farmacia", "patroclo"),
+               resolution="Resuelto: Inmutabilidad + Adenda Ágil (4.85, consenso)"),
+    "c2": dict(members=("patroclo", "yasuri"),
                label="Farmacia vs. Pacientes/Médicos",
-               resolution="Resuelto: Cola virtual, despacho en 1 clic (4.80/5, consenso)"),
+               resolution="Resuelto: Cola virtual, despacho en 1 clic (4.80, consenso)"),
+    "c3": dict(members=("sara", "leonidas"),
+               label="Médicos/Enfermería vs. Equipo TI/Administración",
+               resolution="Resuelto: Autoguardado local cada 30 s, cifrado (4.20, consenso)"),
 }
 
 # ----------------------------------------------------------------------------
@@ -110,27 +122,33 @@ DOOR_COLORS = {
     (0, 200, 255): "direccion",
     (0, 0, 255): "farmacia",
     (200, 0, 255): "espera",
+    (255, 0, 160): "reuniones",
 }
 
 # cada sala: nombre, stakeholder que vive ahí, dónde está parado en el plano (map_pos)
 # y dónde está parado dentro de la sala de perfil (x)
 SALAS = {
-    "admision":    dict(name="Admisión",              npc="minsa",    map_pos=(64, 434),  x=284),
-    "triaje":      dict(name="Triaje",                npc="sara",     map_pos=(236, 256), x=236),
-    "consultorio": dict(name="Consultorio",           npc="jeremy",   map_pos=(266, 64),  x=222),
-    "admin":       dict(name="Administración · TI",   npc="admin",    map_pos=(84, 60),   x=176),
-    "farmacia":    dict(name="Farmacia",              npc="farmacia", map_pos=(560, 266), x=286),
-    "espera":      dict(name="Sala de espera",        npc="patroclo", map_pos=(556, 476), x=258),
-    "direccion":   dict(name="Dirección · DIRESA",    npc="diresa",   map_pos=(444, 44),  x=228),
+    "admision":    dict(name="Admisión",              npc="mariajose", map_pos=(64, 434),  x=284),
+    "triaje":      dict(name="Triaje",                npc="sara",      map_pos=(236, 256), x=236),
+    "consultorio": dict(name="Consultorio",           npc="jeremy",    map_pos=(266, 64),  x=222),
+    "admin":       dict(name="Sistemas · TI",         npc="leonidas",  map_pos=(84, 60),   x=176),
+    "farmacia":    dict(name="Farmacia",              npc="patroclo",  map_pos=(560, 266), x=286),
+    "espera":      dict(name="Sala de espera",        npc="yasuri",    map_pos=(556, 476), x=258),
+    "direccion":   dict(name="Administración",        npc="arian",     map_pos=(444, 44),  x=228),
+    "reuniones":   dict(name="Sala de reuniones",     npc="carmen",    map_pos=(28, 212),  x=140),
 }
 
 # ----------------------------------------------------------------------------
-# CAPÍTULOS (se eligen en el buzón que está a la izquierda del hospital)
+# CAPÍTULOS (se eligen en el buzón que está a la izquierda del centro de salud)
+# Siguen las escenas del guion de sustentación.
 # ----------------------------------------------------------------------------
 CAPITULOS = [
-    dict(titulo="Conociendo a los stakeholders", mision="Conoce a los 7 stakeholders",
+    dict(titulo="El centro de salud de papel", mision="Conoce a los 8 stakeholders",
          logro="Conociendo a los stakeholders"),
-    dict(titulo="Requisitos de cada stakeholder", mision="Próximamente", logro=None),
+    dict(titulo="Las decisiones del equipo", mision="Prioriza los módulos y resuelve 3 conflictos",
+         logro="Decisiones con criterio"),
+    dict(titulo="Sigue el hilo", mision="Sigue el hilo del RF-001 por 4 puertas",
+         logro="Todo está conectado"),
 ]
 BUZON_X = 76                         # dónde está el buzón en la calle (centro, en píxeles internos)
 SALIDA_MAPA = (268, 550, 356, 560)   # zona de la puerta de entrada en el plano (x1, y1, x2, y2) para salir a la calle
@@ -877,6 +895,8 @@ P_CHECK = ["....X", "...X.", "X.X..", ".X..."]
 P_CERO = ["XXX", "X.X", "X.X", "X.X", "XXX"]
 P_UNO = [".X.", "XX.", ".X.", ".X.", "XXX"]
 P_PASTILLA = ["AABB"]
+P_HOJA = ["AAAA", "ABBA", "AAAA", "ABBA", "AAAA"]
+P_SELLO = [".AA.", "AAAA", ".AA.", "BBBB"]
 
 
 def px_icono(s, x, y, filas, color, esc=1, color_b=None):
@@ -919,6 +939,111 @@ def dibujar_buzon(s, x, base, t, nuevo):
         ui_rect(s, UI_LINEA, bx + 15, by + 5, 7, 3)
         ui_rect(s, (220, 190, 60), bx + 16, by + 6, 5, 1)
 # ======================== FIN DEL BLOQUE B ========================
+
+# ============================================================================
+# CAPÍTULOS 2 Y 3: DATOS DEL INFORME (edita aquí los textos)
+# ============================================================================
+LETRAS.update({                                   # letras que faltaban
+    ">": ["000", "100", "010", "001", "010", "100", "000"],
+    "<": ["000", "001", "010", "100", "010", "001", "000"],
+    "=": ["000", "000", "111", "000", "111", "000", "000"],
+    "→": ["00000", "00100", "00010", "11111", "00010", "00100", "00000"],
+    "≤": ["001", "010", "100", "010", "001", "000", "111"],
+    "#": ["01010", "11111", "01010", "01010", "11111", "01010", "00000"],
+})
+
+# Capítulo 1: cartel "Lo que el caso no decía" (Tabla 2)
+SUPUESTOS = [
+    "No dice cuántos usuarios habrá → supusimos 50 al mismo tiempo (RNF-001).",
+    "No dice cómo identificar al paciente → usamos el DNI (RF-001).",
+    "No dice qué módulos van primero → priorizamos la Historia Clínica Electrónica y la Receta Electrónica.",
+    "No dice qué catálogo de diagnósticos usar → adoptamos el CIE-10 (RF-004).",
+]
+
+# Capítulo 2: los 5 módulos y solo 2 monedas (Tablas 13 y 14, sección 2.7)
+# ok = True si es uno de los 2 que entran en la primera fase
+MODULOS = [
+    dict(nombre="Historia Clínica Electrónica", moscow="MUST HAVE", ok=True,
+         nota="Must have: sin ella no hay atención ni se cumple la NTS 139 (HU-001 a HU-004)."),
+    dict(nombre="Receta Electrónica / Farmacia", moscow="MUST HAVE", ok=True,
+         nota="Must have: emitir la receta (HU-005). Dispensarla es Should dentro del mismo módulo (HU-006)."),
+    dict(nombre="Inventario completo", moscow="WON'T (ESTA VEZ)", ok=False,
+         nota="Won't have en esta fase (HU-009): pasa a la Fase 2."),
+    dict(nombre="Derivaciones", moscow="COULD HAVE", ok=False,
+         nota="Could have (HU-010): con el CR-002 pasa a la Fase 2."),
+    dict(nombre="Reportes en tiempo real", moscow="FASE 2", ok=False,
+         nota="No es Must have: queda fuera de los 2 módulos que paga el presupuesto."),
+]
+WSJF = [("HU-003", "Registrar diagnóstico CIE-10", 3.0), ("HU-002", "Registrar triaje", 2.67),
+        ("HU-004", "Rectificar registro clínico", 2.67), ("HU-001", "Crear historia clínica", 2.5),
+        ("HU-006", "Dispensar receta", 2.33), ("HU-008", "Gestionar usuarios y roles", 2.25),
+        ("HU-005", "Emitir receta electrónica", 1.8), ("HU-007", "Consultar auditoría", 1.75)]
+
+# Capítulo 2: conflictos (sección 2.5, Tablas 8, 9 y 10). La alternativa C es la ganadora.
+CONFLICTOS_C2 = {
+    "c1": dict(
+        sala="consultorio", titulo="CONFLICTO 1 · EL MÉDICO VS. EL MINSA", tabla="Tabla 8",
+        criterios=[("NTS 139", 40), ("Rapidez ≤ 5 clics", 30), ("Costo", 15), ("Seguridad", 15)],
+        alternativas=[
+            ("A", "Edición libre sin histórico", (1, 5, 5, 1), 2.80, "Descartada: es rápida, pero infringe la NTS 139."),
+            ("B", "Bloqueo total con permiso de jefatura", (5, 1, 3, 5), 3.50, "Descartada: cumple la norma, pero es muy burocrática."),
+            ("C", "Inmutabilidad con 'Adenda Ágil'", (5, 5, 4, 5), 4.85, None)],
+        acuerdo="Nada se borra: el registro es inmutable. El médico corrige con el botón '+ Nota de Rectificación', "
+                "que genera una adenda firmada, y la auditoría corre en segundo plano sin hacer lenta la pantalla.",
+        antes=[("jeremy", "Si me equivoco en un diagnóstico, necesito corregirlo rápido."),
+               ("carmen", "La NTS 139 no permite borrar registros clínicos."),
+               ("yo", "Los dos tienen razón. Evaluemos tres caminos con criterios con peso.")],
+        despues=[("jeremy", "Con la nota de rectificación corrijo en segundos."),
+                 ("carmen", "Y como nada se borra, la norma se cumple.")]),
+    "c2": dict(
+        sala="farmacia", titulo="CONFLICTO 2 · FARMACIA VS. PACIENTES", tabla="Tabla 9",
+        criterios=[("Menos espera", 35), ("Control de stock", 35), ("Simplicidad", 20), ("Cero papel", 10)],
+        alternativas=[
+            ("A", "Mantener el cuaderno físico de cargos", (2, 2, 2, 1), 1.90, "Descartada: mantiene los errores del papel."),
+            ("B", "Despacho virtual sin validar stock", (5, 1, 4, 5), 3.40, "Descartada: es rápido, pero descuadra el inventario."),
+            ("C", "Cola virtual con despacho en 1 clic", (5, 5, 4, 5), 4.80, None)],
+        acuerdo="La receta llega al instante a farmacia. El técnico identifica al paciente por DNI, entrega el "
+                "medicamento y pulsa 'Dispensar': el stock se descuenta solo (RF-008), sin papel.",
+        antes=[("patroclo", "Cada medicamento que sale tiene que descontarse del stock."),
+               ("yasuri", "¡Pero no queremos hacer cola para recoger la receta!"),
+               ("yo", "Busquemos la opción que cuide el stock sin hacerlos esperar.")],
+        despues=[("patroclo", "Pulso 'Dispensar' y el stock se descuenta solo."),
+                 ("yasuri", "Y mi receta llega al instante. ¡Sin colas!")]),
+    "c3": dict(
+        sala="triaje", titulo="CONFLICTO 3 · LOS QUE REGISTRAN VS. TI", tabla="Tabla 10", apagon=True,
+        criterios=[("Seguridad de datos", 35), ("No perder datos", 35), ("Costo", 15), ("Rapidez", 15)],
+        alternativas=[
+            ("A", "Guardar solo en el servidor", (5, 1, 5, 3), 3.30, "Descartada: si se cae la conexión, se pierden los datos."),
+            ("B", "Autoguardado local sin protección", (1, 5, 4, 5), 3.45, "Descartada: deja expuestos los datos de salud."),
+            ("C", "Autoguardado local cada 30 s, cifrado", (4, 5, 3, 4), 4.20, None)],
+        acuerdo="El sistema guarda en el equipo cada 30 segundos lo que se registra, cifrado, y lo borra cuando "
+                "termina de sincronizar con el servidor (RNF-008). No se pierde trabajo y los datos quedan protegidos.",
+        antes=[("sara", "¡Se cortó la conexión y estaba registrando los signos vitales!"),
+               ("leonidas", "Si se guarda en el equipo sin protección, los datos de salud quedan expuestos (Ley 29733)."),
+               ("yo", "Comparemos tres formas de guardar con criterios con peso.")],
+        despues=[("sara", "Ahora ya no pierdo lo registrado si se va la conexión."),
+                 ("leonidas", "Y los datos viajan cifrados. Así sí.")]),
+}
+TAREA_DE_SALA = {"reuniones": "modulos", "consultorio": "c1", "farmacia": "c2", "triaje": "c3"}
+
+# Quién visita qué sala en cada capítulo: id -> (sala, posición en el plano, x en la sala)
+VISITAS = {
+    2: {"arian": ("reuniones", (28, 212), 140), "carmen": ("consultorio", (296, 68), 150),
+        "yasuri": ("farmacia", (528, 270), 200), "leonidas": ("triaje", (200, 262), 160)},
+    3: {"yasuri": ("admision", (72, 458), 200)},
+}
+
+# Capítulo 3: las 4 puertas del hilo dorado (centro de cada puerta en el plano)
+PUERTAS_HILO = [(270, 500), (352, 400), (352, 260), (230, 160)]
+INICIO_HILO = (80, 456)                    # donde está María José en el plano
+
+CIERRE = [
+    ("Yanela", "Empezamos con un centro de salud de papel y poco presupuesto."),
+    ("Mónica", "Elegimos los 2 módulos que más importaban y resolvimos los conflictos con criterios, no a ojo."),
+    ("Geradth", "Y cada decisión se puede seguir de punta a punta en el expediente. Estamos listos para sus preguntas."),
+]
+CREDITOS = "Acori Y. · Candiotti M. · Gaitan G."
+
 
 # ----------------------------------------------------------------------------
 # Juego
@@ -1028,7 +1153,7 @@ class Game:
             self.fade = 1.0
             if t >= 35:
                 tr["phase"], tr["t"] = "fadein", 0
-                self.show_banner("Adentro del hospital: acércate a cada persona")
+                self.show_banner("Adentro del centro de salud: acércate a cada persona")
         elif ph == "fadein":
             self.fade = max(0.0, 1.0 - t / 70)
             if t >= 70:
@@ -1071,7 +1196,7 @@ class Game:
                 self.collected.append(n["id"])
                 self.show_banner(f"{n['name']} — necesidad identificada")
                 if len(self.collected) == len(NPCS):
-                    self.show_banner("¡Recorrido completo! 7 stakeholders identificados")
+                    self.show_banner("¡Recorrido completo! 8 stakeholders identificados")
 
         for k, c in CONFLICTS.items():
             a, b = (self.npc_by_id[i] for i in c["members"])
@@ -1166,7 +1291,7 @@ class Game:
         bar.fill((16, 8, 10, 190))
         screen.blit(bar, (0, 0))
         screen.blit(self.f_small.render("DIRESA LA LIBERTAD · IDENTIFICACIÓN DE STAKEHOLDERS", True, (251, 234, 208)), (16, 14))
-        zi = self.f_med.render("Exterior · Hospital", True, (240, 180, 41))
+        zi = self.f_med.render("Exterior · Centro de salud", True, (240, 180, 41))
         screen.blit(zi, (SCREEN_W - zi.get_width() - 16, 12))
         if self.trans is None and self.near_door():
             t = self.f_big.render("Presione E para entrar", True, (251, 234, 208))
@@ -1439,7 +1564,7 @@ class Game:
                 self.c_resolved[key] = True
                 self.show_banner(c["resolution"])
         if len(self.collected) == len(NPCS):
-            self.show_banner("¡Recorrido completo! 7 stakeholders identificados")
+            self.show_banner("¡Recorrido completo! 8 stakeholders identificados")
 
     # --- dibujo ---
     def _dibujar_jugador_lado(self, w):
@@ -1540,7 +1665,7 @@ class Game:
                 feet = (ny + 30 - cy) * SCALE
                 if 0 <= sx <= SCREEN_W and 0 <= feet <= SCREEN_H:
                     self._globo_stakeholder(screen, n, sx, top, feet, True)
-            zona = "Hospital · Pasillos"
+            zona = "Centro de salud"
             ayuda = "Flechas  o  W A S D  para moverte"
         else:
             info = SALAS[self.sala]
@@ -1653,14 +1778,14 @@ class Game:
 
     # --- capítulos, buzón, logro y salida ------------------------------------
     def _recoger(self, n):
-        """Conoces a un stakeholder. Al conocer a los 7 se gana el logro del Capítulo 1."""
+        """Conoces a un stakeholder. Al conocer a los 8 se gana el logro del Capítulo 1."""
         self.collected.append(n["id"])
         self.show_banner(f"{n['name']}: stakeholder identificado")
         if len(self.collected) == len(NPCS) and self.capitulo == 1:
             self._logro(CAPITULOS[0]["logro"])
             self.desbloqueados = max(self.desbloqueados, 2)
             self.buzon_nuevo = True
-            self.show_banner("¡Misión cumplida! Sal del hospital y revisa el buzón")
+            self.show_banner("¡Misión cumplida! Sal del centro de salud y revisa el buzón")
 
     def _logro(self, texto):
         if texto and texto not in self.logros:              # cada logro sale una sola vez
@@ -1751,11 +1876,17 @@ class Game:
             self.frame = 0
 
     # --- los stakeholders hacen algo -----------------------------------------
+    def _actividad(self, n):
+        """Lo que hace cada uno. Yasuri de visita (farmacia, admisión) espera tranquila en vez de bailar."""
+        if n["id"] == "yasuri" and getattr(self, "capitulo", 1) > 1:
+            return "espera"
+        return n.get("actividad", "")
+
     def _pose(self, n):
         """Movimiento según la actividad: (dx, dy, voltear). En píxeles del plano.
         voltear = None significa 'que mire hacia ti' (en las salas)."""
         t = self.t + self._fase.get(n["id"], 0)
-        act = n.get("actividad", "")
+        act = self._actividad(n)
         if act == "baila":                                  # salta al ritmo y cambia de lado
             return int(math.sin(t * 0.105) * 2), -int(abs(math.sin(t * 0.21)) * 3), (t // 30) % 2 == 1
         if act == "pasea":                                  # camina de un lado a otro
@@ -1773,12 +1904,15 @@ class Game:
             return int(math.sin(t * 0.04) * 4), (-1 if t % 60 < 8 else 0), math.cos(t * 0.04) > 0
         if act == "telefono":                               # habla por teléfono
             return 0, -int(abs(math.sin(t * 0.06)) * 1.5), None
+        if act == "archiva":                                # sella historias clínicas: ¡pum!
+            p = t % 48
+            return 0, (-2 if p < 6 else (1 if p < 9 else 0)), (t // 96) % 2 == 1
         return 0, int(math.sin(t * 0.07)), None
 
     def _particulas(self, s, n, cx, top, esc):
         """Partículas alrededor de cada stakeholder. cx = centro, top = arriba del dibujo, esc = 1 plano / 2 sala."""
         t = self.t + self._fase.get(n["id"], 0)
-        act = n.get("actividad", "")
+        act = self._actividad(n)
         if act == "baila":                                  # notas musicales de colores
             colores = ((255, 214, 64), (120, 220, 255), (255, 130, 200))
             for k in range(3):
@@ -1808,6 +1942,13 @@ class Game:
                 x = cx + (-7 + k * 10) * esc + (p * 0.12 if k else -p * 0.12) * esc
                 y = top + 16 * esc - (p * 1.1 - p * p * 0.02) * esc
                 px_icono(s, x, y, P_PASTILLA, (250, 250, 250), esc, (230, 80, 80) if k else (90, 150, 240))
+        elif act == "archiva":                              # hojas que vuelan y el sello que baja
+            for k in range(2):
+                p = (t + k * 24) % 48
+                x = cx + (-10 + k * 16) * esc + math.sin(p * 0.2 + k) * 2 * esc
+                px_icono(s, x, top + 8 * esc - p * 0.4 * esc, P_HOJA, (250, 250, 246), esc, (150, 156, 176))
+            if t % 48 < 9:
+                px_icono(s, cx + 8 * esc, top - 2 * esc, P_SELLO, (200, 60, 70), esc, (120, 30, 40))
         elif act == "telefono":                             # globito con puntos: "..."
             puntos = (t // 18) % 4
             bx, by = int(cx + 8 * esc), int(top - 3 * esc)
@@ -1872,7 +2013,7 @@ class Game:
         ui_rect(s, (214, 58, 58), 6, 8, 10, 4)
         # nombre de la zona
         s.blit(ui_texto(zona, UI_CREMA), (24, 5))
-        # retratos de los 7 stakeholders (progreso)
+        # retratos de los 8 stakeholders (progreso)
         total = len(NPCS)
         cont = ui_texto(f"{len(self.collected)}/{total}", UI_ORO)
         x0 = W - 6 - cont.get_width() - 6 - total * 21
@@ -2181,14 +2322,14 @@ class Game:
         pregunta = None                                         # texto del cartel "Presione E"
         libre = self.trans is None and self.menu is None
         if self.scene == "ext":
-            zona = "Exterior · Hospital"
+            zona = "Exterior · Centro de salud"
             if libre and self.near_door():
                 pregunta = "ENTRAR"
             elif libre and self.cerca_buzon():
                 pregunta = "VER CAPÍTULOS"
         elif self.scene == "map":
             cx, cy = self.cam_mapa()
-            zona = "Hospital · Pasillos"
+            zona = "Centro de salud"
             quien = (self.mx + 16 - cx, self.my - cy)
             if libre and not self.lock_door and self._puerta_actual():
                 pregunta = "ENTRAR"
@@ -2229,6 +2370,897 @@ class Game:
             self._fade_surf.set_alpha(int(255 * self.fade))
             screen.blit(self._fade_surf, (0, 0))
     # ======================== FIN DEL BLOQUE C ========================
+
+    # ======================================================================
+    # CAPÍTULOS 2 Y 3 (diálogos con retrato, tarjetas, decisiones, hilo dorado)
+    # ======================================================================
+    _update_c1 = update
+    _tecla_c1 = tecla
+    _press_e_c1 = press_e
+    _recoger_c1 = _recoger
+    _ui_panel_c1 = _ui_panel
+    _ui_mision_c1 = _ui_mision
+
+    def _c23(self):
+        """Prepara el estado de los capítulos 2 y 3 (se llama sola)."""
+        if hasattr(self, "modal"):
+            return
+        self._ui_init()
+        self.modal = None                 # ventana de diálogo / tarjeta / elección abierta
+        self.c2 = dict(modulos=False)
+        self.c3 = dict(inicio=False, puertas=0, fin=False, cierre=False)
+        self._retratos = {}
+
+    # --- quién está dónde ---------------------------------------------------
+    def _visita(self, nid):
+        return VISITAS.get(self.capitulo, {}).get(nid) if hasattr(self, "capitulo") else None
+
+    def _donde(self, nid):
+        v = self._visita(nid)
+        return v[0] if v else self.room_of_npc[nid]
+
+    def map_pos(self, npc_id):
+        v = self._visita(npc_id)
+        return v[1] if v else SALAS[self.room_of_npc[npc_id]]["map_pos"]
+
+    def _sala_x(self, nid):
+        v = self._visita(nid)
+        return v[2] if v else SALAS[self.room_of_npc[nid]]["x"]
+
+    def _presentes(self, sala):
+        return [n for n in NPCS if self._donde(n["id"]) == sala]
+
+    def _cerca_en_sala(self):
+        """El stakeholder de la sala que está más cerca de ti (o None si nadie está cerca)."""
+        mejor, dist = None, PROX
+        for n in self._presentes(self.sala):
+            d = abs(self.px + SPRITE / 2 - (self._sala_x(n["id"]) + SPRITE / 2))
+            if d < dist:
+                mejor, dist = n, d
+        return mejor
+
+    def _update_sala(self):
+        for n in self._presentes(self.sala):
+            near = abs((self.px + SPRITE / 2) - (self._sala_x(n["id"]) + SPRITE / 2)) < PROX
+            self.npc_alpha[n["id"]] += ((1 if near else 0) - self.npc_alpha[n["id"]]) * 0.18
+            if near and n["id"] not in self.collected:
+                self._recoger(n)
+
+    # --- ventana modal: diálogo, tarjeta, elección ----------------------------
+    def _abrir_modal(self, paginas, al_terminar=None):
+        self.modal = dict(paginas=paginas, i=0, t=0, sel=0, fin=al_terminar, msg=None,
+                          elegidos=set(), bloq=set(), tachadas=set())
+
+    def _modal_siguiente(self):
+        m = self.modal
+        m["i"] += 1
+        m["t"], m["sel"], m["msg"] = 0, 0, None
+        m["elegidos"], m["bloq"], m["tachadas"] = set(), set(), set()
+        if m["i"] >= len(m["paginas"]):
+            fin = m["fin"]
+            self.modal = None
+            if fin:
+                fin()
+
+    def _texto_dialogo(self, p):
+        return ui_partir(p["texto"], 270)
+
+    def _modal_tecla(self, key):
+        m = self.modal
+        p = m["paginas"][m["i"]]
+        tipo = p["tipo"]
+        sigue = key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE)
+        arriba = key in (pygame.K_w, pygame.K_UP)
+        abajo = key in (pygame.K_s, pygame.K_DOWN)
+        if tipo == "dialogo":
+            total = sum(len(l) for l in self._texto_dialogo(p))
+            if sigue:
+                if m["t"] * 1.5 < total:
+                    m["t"] = 9999                               # muestra todo el texto de golpe
+                else:
+                    self._modal_siguiente()
+        elif tipo in ("tarjeta", "fin"):
+            if sigue and m["t"] > 8:
+                self._modal_siguiente()
+        elif tipo == "apagon":
+            if sigue and m["t"] > 30:
+                self._modal_siguiente()
+        elif tipo == "modulos":
+            if arriba:
+                m["sel"] = (m["sel"] - 1) % len(MODULOS)
+            elif abajo:
+                m["sel"] = (m["sel"] + 1) % len(MODULOS)
+            elif sigue:
+                if len(m["elegidos"]) >= 2:
+                    self._modal_siguiente()
+                    return
+                i = m["sel"]
+                mod = MODULOS[i]
+                if i in m["elegidos"] or i in m["bloq"]:
+                    return
+                if mod["ok"]:
+                    m["elegidos"].add(i)
+                    m["msg"] = (mod["nota"], UI_VERDE)
+                else:
+                    m["bloq"].add(i)
+                    m["msg"] = (mod["nota"], UI_ROJO)
+                if len(m["elegidos"]) >= 2:
+                    m["msg"] = ("¡Bien! Las 2 monedas van a los Must have. Presiona E para continuar.", UI_ORO)
+        elif tipo == "alternativas":
+            conf = CONFLICTOS_C2[p["conf"]]
+            n = len(conf["alternativas"])
+            if arriba:
+                m["sel"] = (m["sel"] - 1) % n
+            elif abajo:
+                m["sel"] = (m["sel"] + 1) % n
+            elif sigue:
+                letra, nombre, notas, total, motivo = conf["alternativas"][m["sel"]]
+                if motivo is None:
+                    self._modal_siguiente()
+                else:
+                    m["tachadas"].add(m["sel"])
+                    m["msg"] = (f"{letra} ({total:.2f}) · {motivo}", UI_ROJO)
+
+    # --- teclas, actualización y tecla E -------------------------------------
+    def tecla(self, key):
+        self._c23()
+        if self.modal is not None:
+            self._modal_tecla(key)
+            return None
+        return self._tecla_c1(key)
+
+    def update(self, left, right, up=False, down=False, run=False):
+        self._c23()
+        if self.modal is not None:
+            m = self.modal
+            m["t"] += 1
+            if m["paginas"][m["i"]]["tipo"] == "apagon" and m["t"] > 120:
+                self._modal_siguiente()
+            left = right = up = down = run = False
+        self._update_c1(left, right, up, down, run)
+        # Capítulo 1: cuando se va el logro, sale el cartel de los supuestos
+        if getattr(self, "_supuestos_pend", False) and self.logro_t <= 20 and self.modal is None and self.trans is None:
+            self._supuestos_pend = False
+            self._abrir_modal(self._paginas_supuestos())
+        # cierre del juego: al salir a la calle después del Capítulo 3
+        if (self.scene == "ext" and self.trans is None and self.modal is None and self.capitulo == 3
+                and self.c3["fin"] and not self.c3["cierre"]):
+            self.c3["cierre"] = True
+            self._abrir_modal(self._paginas_cierre())
+
+    def _tarea_sala(self):
+        """Qué se puede hacer con E en esta sala (según el capítulo), si estás cerca de alguien."""
+        if self.scene != "sala" or self._cerca_en_sala() is None:
+            return None
+        if self.capitulo == 2:
+            t = TAREA_DE_SALA.get(self.sala)
+            if t == "modulos" and not self.c2["modulos"]:
+                return t
+            if t in CONFLICTS and not self.c_resolved[t]:
+                return t
+        if self.capitulo == 3 and self.sala == "admision" and not self.c3["inicio"]:
+            return "hilo"
+        return None
+
+    def press_e(self):
+        self._c23()
+        if self.trans is not None:
+            return
+        tarea = self._tarea_sala()
+        if tarea == "modulos":
+            self._abrir_modal(self._paginas_modulos(), self._fin_modulos)
+            return
+        if tarea in CONFLICTS:
+            self._abrir_modal(self._paginas_conflicto(tarea), lambda k=tarea: self._fin_conflicto(k))
+            return
+        if tarea == "hilo":
+            self._abrir_modal(self._paginas_inicio_hilo(), self._fin_inicio_hilo)
+            return
+        if self.scene == "map" and self.capitulo == 3 and self.c3["inicio"]:
+            i = self._puerta_hilo_cerca()
+            if i is not None:
+                self._abrir_puerta(i)
+                return
+        self._press_e_c1()
+
+    # --- capítulos ------------------------------------------------------------
+    def _elegir_capitulo(self):
+        self._c23()
+        sel = self.menu["sel"]
+        self.menu = None
+        self.capitulo = sel + 1
+        for k in self.npc_alpha:
+            self.npc_alpha[k] = 0.0
+        if self.capitulo == 1:
+            self.collected = []
+            self._apagar_conflictos()
+        else:
+            self.collected = [n["id"] for n in NPCS]
+            if self.capitulo == 2:
+                self.c2 = dict(modulos=False)
+                for k in CONFLICTS:
+                    self.c_resolved[k], self.c_shown[k], self.c_alpha[k] = False, False, 0.0
+            else:
+                self.c3 = dict(inicio=False, puertas=0, fin=False, cierre=False)
+                self._apagar_conflictos()
+        self.show_banner(f"Capítulo {self.capitulo}: " + CAPITULOS[sel]["titulo"])
+
+    def _recoger(self, n):
+        self._recoger_c1(n)
+        if self.capitulo == 1 and len(self.collected) == len(NPCS):
+            self._supuestos_pend = True
+
+    def _paginas_supuestos(self):
+        return [dict(
+                tipo="tarjeta", titulo="LO QUE EL CASO NO DECÍA: NUESTROS SUPUESTOS", fuente="Tabla 2 y sección 1.4",
+                lineas=[("El caso no decía todo, así que tomamos decisiones y las dejamos escritas:", UI_GRIS)]
+                + [(f"{i + 1}. {t}", UI_CREMA) for i, t in enumerate(SUPUESTOS)])]
+
+    def _progreso_c2(self):
+        return int(self.c2["modulos"]) + sum(1 for k in CONFLICTS if self.c_resolved[k])
+
+    def _revisar_fin_c2(self):
+        if self.capitulo == 2 and self._progreso_c2() == 1 + len(CONFLICTS):
+            self._logro(CAPITULOS[1]["logro"])
+            self.desbloqueados = max(self.desbloqueados, 3)
+            self.buzon_nuevo = True
+            self.show_banner("¡Misión cumplida! Sal del centro de salud y revisa el buzón")
+
+    # --- Capítulo 2: los módulos ---------------------------------------------
+    def _paginas_modulos(self):
+        return [
+            dict(tipo="dialogo", quien="arian", texto="El presupuesto de la DIRESA solo alcanza para 2 de los 5 módulos."),
+            dict(tipo="dialogo", quien="arian", texto="Tienes 2 monedas. ¿En qué módulos las pondrías?"),
+            dict(tipo="modulos"),
+            dict(tipo="tarjeta", titulo="MOSCOW: QUÉ ENTRA EN LA PRIMERA FASE", fuente="Tabla 14 y sección 2.7",
+                 lineas=[("MoSCoW fue el filtro para respetar el presupuesto de 2 de 5 módulos:", UI_GRIS),
+                         ("MUST: Historia clínica y receta (HU-001 a HU-005), auditoría (HU-007) y usuarios (HU-008).", UI_VERDE),
+                         ("SHOULD: Dispensar la receta (HU-006), dentro del mismo módulo.", (120, 200, 255)),
+                         ("COULD: Derivaciones (HU-010) → Fase 2.", (255, 196, 90)),
+                         ("WON'T (esta vez): Inventario completo (HU-009) → Fase 2.", UI_ROJO)]),
+            dict(tipo="tarjeta", titulo="WSJF: EN QUÉ ORDEN SE CONSTRUYE", fuente="Tabla 14",
+                 lineas=[("WSJF = costo del retraso / tamaño. Ordena las historias Must para cada sprint:", UI_GRIS)],
+                 dibujo=self._dibujo_wsjf),
+            dict(tipo="tarjeta", titulo="TÉCNICA DESCARTADA: VALOR VS. ESFUERZO", fuente="Tabla 13", icono="puerta",
+                 lineas=[("También probamos la matriz Valor vs. Esfuerzo, pero la descartamos:", UI_CREMA),
+                         ("· No garantiza cumplir la norma obligatoria (NTS 139).", UI_ROJO),
+                         ("· No da un cálculo para ordenar el backlog.", UI_ROJO),
+                         ("Por eso usamos MoSCoW + WSJF juntos.", UI_VERDE)]),
+            dict(tipo="tarjeta", titulo="CONTROL DE CAMBIOS · CR-002", fuente="Tabla 39",
+                 lineas=[("Cuando el alcance cambió, lo dejamos registrado (v1.1 → v1.2):", UI_GRIS),
+                         ("Derivaciones (RF-009, RF-012 y RF-013) pasan a Could have y se van a la Fase 2.", UI_CREMA),
+                         ("El CU-010 queda fuera de la primera fase.", UI_CREMA),
+                         ("Así nos concentramos en los 2 módulos: Historia Clínica Electrónica y Receta Electrónica/Farmacia.", UI_VERDE),
+                         ("Aprobado por los stakeholders (Administración y MINSA), acta del 02/11/2026.", UI_GRIS)]),
+            dict(tipo="dialogo", quien="arian",
+                 texto="Con MoSCoW decidimos qué entra y con WSJF en qué orden se construye. ¡Decisión tomada!"),
+        ]
+
+    def _fin_modulos(self):
+        self.c2["modulos"] = True
+        self.show_banner("Resuelto: módulos priorizados (HCE y Receta Electrónica)")
+        self._revisar_fin_c2()
+
+    def _dibujo_wsjf(self, s, x, y, w):
+        maxv = max(v for _, _, v in WSJF)
+        for i, (hu, nombre, v) in enumerate(WSJF):
+            yy = y + i * 11
+            s.blit(ui_texto(hu, UI_ORO if i == 0 else UI_GRIS), (x, yy))
+            s.blit(ui_texto(ui_cortar(nombre, 168), UI_CREMA), (x + 42, yy))
+            bw = int((w - 254) * v / maxv)
+            ui_rect(s, UI_LINEA, x + 214, yy + 2, bw + 2, 7)
+            ui_rect(s, UI_ORO if i == 0 else (90, 150, 220), x + 215, yy + 3, bw, 5)
+            s.blit(ui_texto(f"{v:.2f}".rstrip("0").rstrip("."), UI_CREMA), (x + 220 + bw, yy))
+        s.blit(ui_texto("El diagnóstico CIE-10 (HU-003) va primero: WSJF 3.0", UI_ORO), (x, y + len(WSJF) * 11 + 3))
+        return len(WSJF) * 11 + 14
+
+    # --- Capítulo 2: conflictos ----------------------------------------------
+    def _paginas_conflicto(self, k):
+        conf = CONFLICTOS_C2[k]
+        a, b = CONFLICTS[k]["members"]
+        lado = {a: "izq", b: "der", "yo": "izq"}
+        pags = []
+        if conf.get("apagon"):
+            pags.append(dict(tipo="apagon"))
+        for quien, texto in conf["antes"]:
+            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq")))
+        crit = " · ".join(f"C{i + 1} {n} ({p}%)" for i, (n, p) in enumerate(conf["criterios"]))
+        pags.append(dict(tipo="alternativas", conf=k, crit=crit))
+        letra, nombre, notas, total, _ = conf["alternativas"][-1]
+        pags.append(dict(tipo="tarjeta", titulo=f"GANADORA: {letra} · {total:.2f} (CONSENSO)",
+                         fuente=f"{conf['tabla']}, sección 2.5", icono="ok",
+                         lineas=[(nombre, UI_ORO), (conf["acuerdo"], UI_CREMA)]))
+        for quien, texto in conf["despues"]:
+            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq")))
+        return pags
+
+    def _fin_conflicto(self, k):
+        self.c_resolved[k] = True
+        self.show_banner(CONFLICTS[k]["resolution"])
+        self._revisar_fin_c2()
+
+    # --- Capítulo 3: el hilo dorado --------------------------------------------
+    def _paginas_inicio_hilo(self):
+        return [
+            dict(tipo="dialogo", quien="yasuri", texto="Buenos días. Vengo a atenderme, pero perdí mi DNI...", lado="der"),
+            dict(tipo="dialogo", quien="mariajose", texto="Sin DNI igual tengo que abrirle su historia clínica. ¿El sistema lo permite?"),
+            dict(tipo="dialogo", quien="yo",
+                 texto="Sí. Sigamos el hilo de ese pedido por todo el expediente: son 4 puertas, una por artefacto."),
+        ]
+
+    def _fin_inicio_hilo(self):
+        self.c3["inicio"] = True
+        self.show_banner("Sigue el hilo dorado: sal al pasillo y busca la puerta 1")
+
+    def _puerta_hilo_cerca(self):
+        fx, fy = self.mx + 16, self.my + 28
+        for i, (px, py) in enumerate(PUERTAS_HILO):
+            if abs(fx - px) < 16 and abs(fy - py) < 14:
+                return i
+        return None
+
+    def _abrir_puerta(self, i):
+        if i > self.c3["puertas"]:
+            self.show_banner(f"Sigue el hilo: primero abre la puerta {self.c3['puertas'] + 1}")
+            return
+        pags = [self._tarjeta_puerta(i)]
+        if i == self.c3["puertas"]:
+            self.c3["puertas"] += 1
+            if self.c3["puertas"] == len(PUERTAS_HILO):
+                pags += [
+                    dict(tipo="dialogo", quien="yo",
+                         texto="Así con cualquier requisito: si uno cambia, sabemos exactamente qué más cambia."),
+                    dict(tipo="tarjeta", titulo="¿Y SI EL PROFE ELIGE OTRO REQUISITO?", fuente="Tabla 38", icono="ok",
+                         lineas=[("Una buena segunda opción es la nota de rectificación:", UI_GRIS),
+                                 ("RF-005A / RF-005B → CU-004 → AtencionMedica y NotaRectificacion → filas F-06 a F-09.", UI_CREMA),
+                                 ("Ten el PDF del informe abierto en otra ventana por si piden ver la fila real.", UI_ORO)])]
+                self._abrir_modal(pags, self._fin_hilo)
+                return
+        self._abrir_modal(pags)
+
+    def _fin_hilo(self):
+        self.c3["fin"] = True
+        self._logro(CAPITULOS[2]["logro"])
+        self.show_banner("¡Misión cumplida! Sal del centro de salud para el cierre")
+
+    def _tarjeta_puerta(self, i):
+        if i == 0:
+            return dict(tipo="tarjeta", titulo="PUERTA 1 · EL REQUISITO (SRS)", fuente="Tabla 5 (catálogo RF/RNF)", icono="puerta",
+                        lineas=[("RF-001 · MUST HAVE · Fuente: personal de admisión", UI_ORO),
+                                ("El sistema debe permitir crear la Historia Clínica Electrónica con el DNI del paciente, "
+                                 "o con un código temporal si el paciente no tiene DNI.", UI_CREMA),
+                                ("Criterio de aceptación: con DNI busca la historia: si existe la recupera y si no, la crea. "
+                                 "Sin DNI genera un código temporal único.", UI_GRIS)])
+        if i == 1:
+            return dict(tipo="tarjeta", titulo="PUERTA 2 · EL CASO DE USO", fuente="Figura 2 y Tabla 18", icono="puerta",
+                        lineas=[("Ese requisito se vuelve el CU-001 · Abrir / crear historia clínica.", UI_ORO)],
+                        dibujo=self._dibujo_cu)
+        if i == 2:
+            return dict(tipo="tarjeta", titulo="PUERTA 3 · LAS CLASES", fuente="Figuras 7 y 8, Tabla 32", icono="puerta",
+                        lineas=[("En el diagrama de clases, RF-001 vive en estas 3 clases:", UI_GRIS)],
+                        dibujo=self._dibujo_clases)
+        return dict(tipo="tarjeta", titulo="PUERTA 4 · LA MATRIZ", fuente="Tabla 38", icono="puerta",
+                    lineas=[("Todo se junta en la fila F-01 de la matriz Requisito–CU–Clase–Prueba:", UI_GRIS)],
+                    dibujo=self._dibujo_matriz)
+
+    def _dibujo_cu(self, s, x, y, w):
+        # actor (monigote) -> elipse del caso de uso
+        ax, ay = x + 18, y + 4
+        pygame.draw.circle(s, UI_CREMA, (ax, ay + 4), 4, 1)
+        ui_rect(s, UI_CREMA, ax, ay + 8, 1, 10)
+        ui_rect(s, UI_CREMA, ax - 5, ay + 11, 11, 1)
+        pygame.draw.line(s, UI_CREMA, (ax, ay + 18), (ax - 4, ay + 25))
+        pygame.draw.line(s, UI_CREMA, (ax, ay + 18), (ax + 4, ay + 25))
+        s.blit(ui_texto("SRA. MARÍA JOSÉ", UI_ORO), (x, y + 32))
+        pygame.draw.line(s, UI_GRIS, (ax + 10, ay + 12), (x + 150, ay + 12))
+        pygame.draw.ellipse(s, UI_FONDO2, (x + 150, y, 150, 30))
+        pygame.draw.ellipse(s, UI_ORO, (x + 150, y, 150, 30), 1)
+        t = ui_texto("CU-001 ABRIR / CREAR HC", UI_CREMA)
+        s.blit(t, (x + 225 - t.get_width() // 2, y + 10))
+        yy = y + 46
+        s.blit(ui_texto("Excepción E-2 · Paciente sin DNI:", UI_ROJO), (x, yy))
+        pasos = ["1. El paciente no tiene DNI.", "2. Se elige 'Paciente sin DNI'.",
+                 "3. El sistema genera un código temporal único.", "4. El flujo sigue con los datos del paciente."]
+        for k, p in enumerate(pasos):
+            s.blit(ui_texto(p, UI_CREMA), (x + 6, yy + 11 + k * 10))
+        return 98
+
+    def _dibujo_clases(self, s, x, y, w):
+        cajas = [("CL-001", "Persona", "datos personales"), ("CL-002", "Paciente", "DNI o código temporal"),
+                 ("CL-005", "HistoriaClinica", "número único de HCE")]
+        gap = 10
+        bw = (w - 2 * gap) // 3
+        for k, (cl, nombre, nota) in enumerate(cajas):
+            bx = x + k * (bw + gap)
+            ui_rect(s, UI_LINEA, bx, y, bw, 48)
+            ui_rect(s, (34, 46, 80), bx + 1, y + 1, bw - 2, 46)
+            ui_rect(s, UI_ORO_OSC, bx + 1, y + 13, bw - 2, 1)
+            t = ui_texto(nombre, UI_ORO)
+            s.blit(t, (bx + bw // 2 - t.get_width() // 2, y + 3))
+            s.blit(ui_texto(cl, UI_GRIS), (bx + 5, y + 16))
+            for j, l in enumerate(ui_partir(nota, bw - 10)[:2]):
+                s.blit(ui_texto(l, UI_CREMA), (bx + 5, y + 26 + j * 10))
+            if k:
+                ui_rect(s, UI_CREMA, bx - gap, y + 24, gap, 1)
+        yy = y + 56
+        s.blit(ui_texto("El código temporal vive en Paciente (Tabla 32).", UI_VERDE), (x, yy))
+        for k, l in enumerate(ui_partir("En la secuencia del CU-001 (Figura 8): si el paciente no tiene DNI, "
+                                        "el sistema genera el código temporal.", w - 4)):
+            s.blit(ui_texto(l, UI_CREMA), (x, yy + 12 + k * 10))
+        return 88
+
+    def _dibujo_matriz(self, s, x, y, w):
+        pruebas = "PR-001 PR-002 PR-003"
+        cols = [("FILA", 30), ("REQ.", 44), ("CU", 44), ("CLASES", 88), ("PRUEBAS", w - 206)]
+        fila = ["F-01", "RF-001", "CU-001", "CL-001,002,005", pruebas]
+        cx = x
+        for (titulo, cw), valor in zip(cols, fila):
+            ui_rect(s, UI_LINEA, cx, y, cw, 30)
+            ui_rect(s, UI_FONDO2, cx + 1, y + 1, cw - 2, 12)
+            ui_rect(s, (34, 46, 80), cx + 1, y + 14, cw - 2, 15)
+            s.blit(ui_texto(titulo, UI_ORO), (cx + 3, y + 2))
+            s.blit(ui_texto(ui_cortar(valor, cw - 6), UI_CREMA), (cx + 3, y + 17))
+            cx += cw
+        brillo = (self.t // 15) % 2 == 0                       # PR-003 parpadea
+        px = x + 206 + 3 + ui_ancho("PR-001 PR-002 ") + 1
+        ui_rect(s, UI_ORO if brillo else UI_ORO_OSC, px - 1, y + 26, ui_ancho("PR-003") + 2, 1)
+        yy = y + 38
+        s.blit(ui_texto("PR-001: DNI nuevo → se crea la HCE con número único.", UI_GRIS), (x, yy))
+        s.blit(ui_texto("PR-002: DNI existente → se recupera la HCE sin duplicar.", UI_GRIS), (x, yy + 10))
+        s.blit(ui_texto("PR-003: sin DNI → se genera un código temporal único.", UI_ORO), (x, yy + 20))
+        return 70
+
+    def _paginas_cierre(self):
+        return [dict(tipo="tarjeta", titulo="CIERRE", fuente="Paso a las preguntas (2.4)", icono="ok",
+                     lineas=sum(([(nombre.upper(), UI_ORO), (texto, UI_CREMA)] for nombre, texto in CIERRE), [])),
+                dict(tipo="fin")]
+
+    # --- dibujo del mundo (salas con visitas, hilo dorado) ----------------------
+    def draw_world(self):
+        self._c23()
+        w, cw = self.world, self.chars
+        cw.fill((0, 0, 0, 0))
+        if self.scene == "ext":
+            w.blit(self.bg_ext, (0, 0))
+            dibujar_buzon(cw, BUZON_X, GROUND + 1, self.t, self.buzon_nuevo)
+            self._dibujar_jugador_lado(cw)
+        elif self.scene == "map":
+            cx, cy = self.cam_mapa()
+            w.blit(self.plano, (0, 0), (cx, cy, W, H))
+            if self.capitulo == 3 and self.c3["inicio"]:
+                self._dibujar_hilo(w, cx, cy)
+            lista = []
+            for n in NPCS:
+                nx, ny = self.map_pos(n["id"])
+                dx, dy, voltear = self._pose(n)
+                im = self.npc_front[n["id"]]
+                if voltear:
+                    im = pygame.transform.flip(im, True, False)
+                lista.append((ny, n, im, nx - cx + dx, ny - cy, dy))
+            lista.append((self.my, None, self.map_player[self.mdir][self.frame], self.mx - cx, self.my - cy, 0))
+            for _, n, im, x, y, dy in sorted(lista, key=lambda e: e[0]):
+                cw.blit(self._sombra_mapa, (int(x) + 9, int(y) + 29))
+                cw.blit(im, (int(x), int(y) + dy))
+            for _, n, im, x, y, dy in lista:
+                if n is not None:
+                    self._particulas(cw, n, x + 16, y + dy, 1)
+        else:
+            w.blit(self.salas[self.sala], (0, 0))
+            for n in self._presentes(self.sala):
+                sx = self._sala_x(n["id"])
+                dx, dy, voltear = self._pose(n)
+                if voltear is None:
+                    voltear = self.px + SPRITE / 2 > sx + SPRITE / 2
+                img = self.npc_sprites[n["id"]]
+                if voltear:
+                    img = pygame.transform.flip(img, True, False)
+                x = sx + dx * 2
+                self._shadow(cw, x + SPRITE // 2, GROUND + 1)
+                cw.blit(img, (x, GROUND - FEET + dy * 2))
+                self._particulas(cw, n, x + SPRITE // 2, GROUND - FEET + dy * 2, 2)
+            self._dibujar_jugador_lado(cw)
+
+    def _dibujar_hilo(self, w, cx, cy):
+        pts = [INICIO_HILO] + PUERTAS_HILO
+        hechas = self.c3["puertas"]
+        for k in range(len(PUERTAS_HILO)):
+            (x0, y0), (x1, y1) = pts[k], pts[k + 1]
+            largo = max(1, int(math.hypot(x1 - x0, y1 - y0)))
+            for d in range(0, largo, 2):
+                if k > hechas:
+                    break
+                if k == hechas and (d // 6 + self.t // 4) % 2:   # el tramo que falta: rayitas que avanzan
+                    continue
+                px = x0 + (x1 - x0) * d / largo - cx
+                py = y0 + (y1 - y0) * d / largo - cy
+                ui_rect(w, (150, 100, 24), int(px), int(py) + 1, 2, 2)
+                ui_rect(w, (255, 214, 64), int(px), int(py), 2, 2)
+        for i, (px, py) in enumerate(PUERTAS_HILO):
+            x, y = px - cx, py - cy
+            if not (-20 < x < W + 20 and -40 < y < H + 20):
+                continue
+            abierta = i < hechas
+            sigue = i == hechas
+            if sigue:                                           # brillo que late
+                r = 13 + int(math.sin(self.t * 0.12) * 2)
+                halo = pygame.Surface((r * 2, r * 2), pygame.SRCALPHA)
+                pygame.draw.circle(halo, (255, 214, 64, 70), (r, r), r)
+                w.blit(halo, (x - r, y - 12 - r))
+            marco = (150, 100, 24) if not abierta else (80, 90, 110)
+            relleno = (255, 214, 64) if not abierta else (140, 150, 170)
+            ui_rect(w, UI_LINEA, x - 8, y - 24, 16, 24)
+            ui_rect(w, marco, x - 7, y - 23, 14, 23)
+            ui_rect(w, relleno, x - 5, y - 21, 10, 21)
+            ui_rect(w, UI_LINEA, x - 7, y - 1, 14, 1)
+            if abierta:
+                ui_rect(w, (60, 70, 90), x - 5, y - 21, 3, 21)
+            t = ui_texto(str(i + 1), UI_LINEA, None)
+            w.blit(t, (x - t.get_width() // 2 + 1, y - 18))
+
+    # --- interfaz: panel de tareas, misión, globos y ventana modal ---------------
+    def _ui_panel(self, s):
+        self._c23()
+        if self.capitulo == 1:
+            return self._ui_panel_c1(s)
+        if not self.panel_visible:
+            return
+        if self.capitulo == 2:
+            titulo = "DECISIONES"
+            filas = [(self.c2["modulos"], "Prioriza 2 de 5 módulos", "Sala de reuniones")]
+            filas += [(self.c_resolved[k], f"Conflicto {i + 1}", SALAS[CONFLICTOS_C2[k]["sala"]]["name"])
+                      for i, k in enumerate(CONFLICTS)]
+        else:
+            titulo = "SIGUE EL HILO"
+            filas = [(self.c3["inicio"], "Habla con María José", "Admisión")]
+            nombres = ["El requisito", "El caso de uso", "Las clases", "La matriz"]
+            filas += [(self.c3["puertas"] > i, f"Puerta {i + 1}", nombres[i]) for i in range(4)]
+        hechas = sum(1 for f in filas if f[0])
+        w = 162
+        x, y = W - w - 4, 28
+        alto = 20 + 11 * len(filas) + 3
+        ui_marco(s, x, y, w, alto)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, w - 6, 13)
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 16, w - 6, 1)
+        s.blit(ui_texto(titulo, UI_ORO), (x + 8, y + 3))
+        num = ui_texto(f"{hechas}/{len(filas)}", UI_CREMA)
+        s.blit(num, (x + w - 8 - num.get_width(), y + 3))
+        siguiente = next((i for i, f in enumerate(filas) if not f[0]), None)
+        for i, (ok, txt, donde) in enumerate(filas):
+            yy = y + 20 + i * 11
+            if ok:
+                ui_icono(s, x + 6, yy, ICONO_OK, PAL_OK)
+            else:
+                ui_rect(s, UI_LINEA, x + 7, yy + 1, 7, 7)
+                ui_rect(s, (62, 78, 116), x + 8, yy + 2, 5, 5)
+            color = UI_GRIS if ok else (UI_ORO if i == siguiente else UI_CREMA)
+            s.blit(ui_texto(txt, color), (x + 18, yy))
+            s.blit(ui_texto(ui_cortar(donde, w - 26 - ui_ancho(txt) - 8), (110, 124, 160)), (x + 18 + ui_ancho(txt) + 6, yy))
+
+    def _ui_mision(self, s):
+        self._c23()
+        if self.capitulo == 1 or self.buzon_nuevo:
+            return self._ui_mision_c1(s)
+        if self.banner_t > 0 or self.menu is not None or self.modal is not None:
+            return
+        if self.capitulo == 2:
+            lin = [("CAPÍTULO 2", UI_ORO), ("Prioriza los módulos y", UI_CREMA), ("resuelve 3 conflictos", UI_CREMA),
+                   (f"Llevas {self._progreso_c2()}/4", UI_GRIS)]
+        elif not self.c3["fin"]:
+            lin = [("CAPÍTULO 3", UI_ORO), ("Sigue el hilo del RF-001", UI_CREMA), ("Empieza en Admisión", UI_CREMA),
+                   (f"Puertas {self.c3['puertas']}/4", UI_GRIS)]
+        else:
+            lin = [("¡JUEGO COMPLETADO!", UI_ORO), ("Gracias por jugar", UI_CREMA)]
+        bw = max(ui_ancho(l) for l, _ in lin) + 16
+        ui_marco(s, 4, 28, bw, 10 * len(lin) + 8)
+        for i, (l, c) in enumerate(lin):
+            s.blit(ui_texto(l, c), (12, 32 + 10 * i))
+
+    def _ui_actores(self, s):
+        if self.scene != "sala":
+            cx, cy = self.cam_mapa()
+            for n in NPCS:
+                nx, ny = self.map_pos(n["id"])
+                dx, dy, _ = self._pose(n)
+                sx, top, feet = nx + 16 - cx + dx, ny - cy + dy, ny + 30 - cy
+                if 0 <= sx <= W and 0 <= feet <= H:
+                    self._ui_globo_stakeholder(s, n, sx, top, feet, True)
+            for k, c in CONFLICTS.items():
+                if self.c_alpha[k] > 0.3 and not self.c_resolved[k]:
+                    ax, ay = self.map_pos(c["members"][0])
+                    bx, by = self.map_pos(c["members"][1])
+                    self._ui_rayo(s, (ax + bx) / 2 + 16 - cx, (ay + by) / 2 - 8 - cy + math.sin(self.t * 0.2) * 2)
+            return
+        cerca = self._cerca_en_sala()
+        presentes = self._presentes(self.sala)
+        for n in presentes:
+            if n is not cerca and len(presentes) > 1:
+                self.npc_alpha[n["id"]] = min(self.npc_alpha[n["id"]], 0.4)   # un solo globo a la vez
+            sx = self._sala_x(n["id"])
+            dx, dy, _ = self._pose(n)
+            self._ui_globo_stakeholder(s, n, sx + dx * 2 + SPRITE / 2, GROUND - FEET + dy * 2, None, False)
+        if self.capitulo == 2 and len(presentes) > 1:            # rayo entre los dos que discuten
+            k = TAREA_DE_SALA.get(self.sala)
+            if k in CONFLICTS and not self.c_resolved[k]:
+                xs = [self._sala_x(n["id"]) + SPRITE / 2 for n in presentes]
+                self._ui_rayo(s, sum(xs) / len(xs), GROUND - FEET - 4 + math.sin(self.t * 0.2) * 2)
+
+    def _retrato(self, quien):
+        """Retrato 60x60 para los diálogos (usa assets/retrato_<id>.png si lo dibujas tú)."""
+        if quien in self._retratos:
+            return self._retratos[quien]
+        p = res(f"assets/retrato_{quien}.png")
+        if os.path.exists(p):
+            im = pygame.transform.scale(pygame.image.load(p).convert_alpha(), (60, 60))
+        else:
+            base = self.map_player["frente"][0] if quien == "yo" else self.npc_front[quien]
+            im = pygame.transform.scale(base.subsurface((6, 0, 20, 20)).copy(), (60, 60))
+        self._retratos[quien] = im
+        return im
+
+    def _ui_modal(self, s):
+        m = self.modal
+        if m is None:
+            return
+        p = m["paginas"][m["i"]]
+        tipo = p["tipo"]
+        if tipo == "dialogo":
+            self._ui_dialogo(s, p, m)
+        elif tipo == "apagon":
+            self._ui_apagon(s, m)
+        elif tipo == "fin":
+            self._ui_fin(s, m)
+        else:
+            ui_rect(s, (0, 0, 0, 150), 0, 0, W, H)
+            x, y, w, h = 18, 26, W - 36, H - 32
+            ui_marco(s, x, y, w, h)
+            ui_rect(s, UI_FONDO2, x + 3, y + 3, w - 6, 13)
+            ui_rect(s, UI_ORO_OSC, x + 3, y + 16, w - 6, 1)
+            tx = x + 8
+            if p.get("icono") == "puerta":
+                ui_rect(s, UI_LINEA, tx, y + 4, 8, 11)
+                ui_rect(s, (255, 214, 64), tx + 1, y + 5, 6, 10)
+                tx += 12
+            elif p.get("icono") == "ok":
+                ui_icono(s, tx, y + 5, ICONO_OK, PAL_OK)
+                tx += 13
+            if tipo == "modulos":
+                titulo = "PRESUPUESTO: SOLO 2 DE 5 MÓDULOS"
+            elif tipo == "alternativas":
+                titulo = CONFLICTOS_C2[p["conf"]]["titulo"]
+            else:
+                titulo = p["titulo"]
+            s.blit(ui_texto(titulo, UI_ORO), (tx, y + 4))
+            cuerpo_y = y + 21
+            if tipo == "tarjeta":
+                yy = cuerpo_y
+                for texto, color in p.get("lineas", []):
+                    for l in ui_partir(texto, w - 18):
+                        s.blit(ui_texto(l, color), (x + 9, yy))
+                        yy += 10
+                    yy += 3
+                if p.get("dibujo"):
+                    p["dibujo"](s, x + 9, yy + 2, w - 18)
+                pie = "CONTINUAR"
+            elif tipo == "modulos":
+                self._ui_modulos(s, m, x, cuerpo_y, w)
+                pie = "CONTINUAR" if len(m["elegidos"]) >= 2 else "PONER MONEDA"
+            else:
+                self._ui_alternativas(s, m, p, x, cuerpo_y, w)
+                pie = "ELEGIR"
+            # pie: fuente del informe + teclas
+            fy = y + h - 16
+            ui_rect(s, (62, 78, 116), x + 6, fy - 3, w - 12, 1)
+            if p.get("fuente"):
+                s.blit(ui_texto("VER: " + p["fuente"], (110, 124, 160)), (x + 9, fy + 1))
+            hx = x + w - 10 - ui_ancho(pie) - 18
+            if tipo in ("modulos", "alternativas"):
+                hx -= 34
+                kx = hx
+                for k in ("W", "S"):
+                    kx += ui_tecla(s, kx, fy - 1, k) + 2
+                hx = kx + 6
+            if m["t"] > 8 or tipo != "tarjeta":
+                ui_tecla(s, hx, fy - 1, "E", (self.t // 24) % 2 == 1)
+                s.blit(ui_texto(pie, UI_CREMA), (hx + 13, fy + 1))
+
+    def _ui_dialogo(self, s, p, m):
+        quien = p["quien"]
+        if quien == "yo":
+            nombre, rol = "Tú", "Equipo de ingeniería"
+        else:
+            n = self.npc_by_id[quien]
+            nombre, rol = n["name"], n["role"]
+        der = p.get("lado") == "der"
+        x, y, w, h = 6, H - 72, W - 12, 66
+        ui_rect(s, (0, 0, 0, 70), 0, 0, W, H)
+        ui_marco(s, x, y, w, h)
+        rx = x + w - 66 if der else x + 6
+        ui_rect(s, UI_LINEA, rx - 1, y + 2, 62, 62)
+        ui_rect(s, (58, 74, 118), rx, y + 3, 60, 60)
+        ui_rect(s, (72, 92, 146), rx, y + 3, 60, 20)
+        s.blit(self._retrato(quien), (rx, y + 3))
+        # cartelito con el nombre
+        nt = nombre.upper() + "  ·  " + rol
+        nw = ui_ancho(nt) + 14
+        nx = (x + w - nw - 70) if der else (x + 70)
+        ui_marco(s, nx, y - 12, nw, 15)
+        s.blit(ui_texto(nombre, UI_ORO), (nx + 7, y - 9))
+        s.blit(ui_texto("  ·  " + rol, UI_GRIS), (nx + 7 + ui_ancho(nombre), y - 9))
+        # texto que se escribe solo
+        tx = x + 8 if der else x + 74
+        quedan = int(m["t"] * 1.5)
+        for i, l in enumerate(self._texto_dialogo(p)):
+            if quedan <= 0:
+                break
+            s.blit(ui_texto(l[:quedan], UI_CREMA), (tx, y + 9 + i * 11))
+            quedan -= len(l)
+        if quedan > 0 and (self.t // 20) % 2 == 0:               # flechita para continuar
+            ax, ay = (x + w - 82 if der else x + w - 14), y + h - 10
+            for k in range(4):
+                ui_rect(s, UI_ORO, ax - 3 + k, ay + k, 7 - 2 * k, 1)
+
+    def _ui_modulos(self, s, m, x, y, w):
+        for k in range(2):                                      # las 2 monedas
+            cx = x + w - 30 + k * 12
+            usada = k < len(m["elegidos"])
+            pygame.draw.circle(s, UI_LINEA, (cx, y - 13), 5)
+            pygame.draw.circle(s, (110, 110, 120) if usada else (255, 200, 60), (cx, y - 13), 4)
+            if not usada:
+                ui_rect(s, (255, 240, 170), cx - 2, y - 15, 1, 2)
+        for i, mod in enumerate(MODULOS):
+            ry = y + 2 + i * 20
+            elegido, bloq, sel = i in m["elegidos"], i in m["bloq"], i == m["sel"]
+            fondo = (48, 64, 106) if sel else (28, 38, 66)
+            ui_rect(s, fondo, x + 8, ry, w - 16, 18)
+            if sel:
+                for (rx, ry2, rw, rh) in ((x + 8, ry, w - 16, 1), (x + 8, ry + 17, w - 16, 1), (x + 8, ry, 1, 18), (x + w - 9, ry, 1, 18)):
+                    ui_rect(s, UI_ORO, rx, ry2, rw, rh)
+            s.blit(ui_texto(mod["nombre"], UI_GRIS if bloq else UI_CREMA), (x + 26, ry + 5))
+            if elegido:
+                pygame.draw.circle(s, UI_LINEA, (x + 17, ry + 9), 5)
+                pygame.draw.circle(s, (255, 200, 60), (x + 17, ry + 9), 4)
+                tag, col = mod["moscow"], UI_VERDE
+            elif bloq:
+                tag, col = "FASE 2 · " + mod["moscow"], UI_ROJO
+                ui_rect(s, UI_ROJO, x + 24, ry + 9, ui_ancho(mod["nombre"]) + 4, 1)
+            else:
+                tag, col = "", UI_GRIS
+            if tag:
+                s.blit(ui_texto(tag, col), (x + w - 14 - ui_ancho(tag), ry + 5))
+        if m["msg"]:
+            texto, color = m["msg"]
+            for k, l in enumerate(ui_partir(texto, w - 18)[:2]):
+                s.blit(ui_texto(l, color), (x + 9, y + 104 + k * 10))
+
+    def _ui_alternativas(self, s, m, p, x, y, w):
+        conf = CONFLICTOS_C2[p["conf"]]
+        for k, l in enumerate(ui_partir(p["crit"], w - 18)[:2]):
+            s.blit(ui_texto(l, UI_GRIS), (x + 9, y + k * 10))
+        ty = y + 24
+        nombre_w = w - 16 - 4 * 20 - 34
+        cabe = ["ALTERNATIVA"] + [f"C{i + 1}" for i in range(4)] + ["TOTAL"]
+        cx = x + 8
+        for i, c in enumerate(cabe):
+            cw = nombre_w if i == 0 else (20 if i < 5 else 34)
+            s.blit(ui_texto(c, UI_ORO), (cx + 3, ty))
+            cx += cw
+        for r, (letra, nombre, notas, total, motivo) in enumerate(conf["alternativas"]):
+            ry = ty + 12 + r * 20
+            sel, tach = r == m["sel"], r in m["tachadas"]
+            ui_rect(s, (48, 64, 106) if sel else (28, 38, 66), x + 8, ry, w - 16, 18)
+            if sel:
+                for (rx, ry2, rw, rh) in ((x + 8, ry, w - 16, 1), (x + 8, ry + 17, w - 16, 1), (x + 8, ry, 1, 18), (x + w - 9, ry, 1, 18)):
+                    ui_rect(s, UI_ORO, rx, ry2, rw, rh)
+            col = UI_GRIS if tach else UI_CREMA
+            lin = ui_partir(f"{letra}. {nombre}", nombre_w - 8)[:2]
+            for j, l in enumerate(lin):
+                s.blit(ui_texto(l, col), (x + 11 + (0 if j == 0 else 12), ry + (5 if len(lin) == 1 else 1 + 9 * j)))
+            cx = x + 8 + nombre_w
+            for v in notas:
+                s.blit(ui_texto(str(v), col), (cx + 6, ry + 5))
+                cx += 20
+            s.blit(ui_texto(f"{total:.2f}", UI_ORO if not tach else UI_GRIS), (cx + 5, ry + 5))
+            if tach:
+                ui_rect(s, UI_ROJO, x + 10, ry + 9, w - 20, 1)
+        if m["msg"]:
+            texto, color = m["msg"]
+            for k, l in enumerate(ui_partir(texto, w - 18)[:2]):
+                s.blit(ui_texto(l, color), (x + 9, ty + 76 + k * 10))
+        else:
+            s.blit(ui_texto("¿Cuál camino eligió el equipo por consenso?", UI_GRIS), (x + 9, ty + 76))
+
+    def _ui_apagon(self, s, m):
+        t = m["t"]
+        parpadeo = t < 40 and (t // 4) % 3 == 0
+        ui_rect(s, (0, 0, 0, 120 if parpadeo else 215), 0, 0, W, H)
+        if t > 20:
+            t1 = ui_texto("¡SE CORTÓ LA CONEXIÓN!", (255, 214, 64))
+            s.blit(t1, (W // 2 - t1.get_width() // 2, H // 2 - 14))
+            t2 = ui_texto("Sara estaba registrando los signos vitales...", UI_CREMA)
+            s.blit(t2, (W // 2 - t2.get_width() // 2, H // 2))
+            ui_icono(s, W // 2 - 4, H // 2 - 34, ICONO_RAYO, PAL_RAYO)
+
+    def _ui_fin(self, s, m):
+        ui_rect(s, (8, 12, 24, 235), 0, 0, W, H)
+        for k in range(18):                                     # estrellitas
+            sx = (k * 97 + self.t // 3) % W
+            sy = (k * 53) % H
+            ui_rect(s, (255, 214, 64) if (k + self.t // 10) % 3 else UI_CREMA, sx, sy, 1, 1)
+        lineas = [("FIN", (255, 214, 64)), ("", None), ("¡Gracias!", UI_CREMA),
+                  ("Estamos listos para sus preguntas", UI_CREMA), ("", None),
+                  ("DIRESA La Libertad · Ingeniería de Software CIIN1252P", UI_GRIS), (CREDITOS, UI_ORO)]
+        yy = 50
+        for texto, color in lineas:
+            if texto:
+                t = ui_texto(texto, color)
+                if texto == "FIN":
+                    t = pygame.transform.scale(t, (t.get_width() * 3, t.get_height() * 3))
+                s.blit(t, (W // 2 - t.get_width() // 2, yy))
+                yy += t.get_height() + 2
+            else:
+                yy += 8
+        if m["t"] > 30 and (self.t // 24) % 2 == 0:
+            t = ui_texto("Presiona E para volver al juego", UI_GRIS)
+            s.blit(t, (W // 2 - t.get_width() // 2, H - 22))
+
+    def draw_ui(self, screen):
+        self._ui_init()
+        self._c23()
+        s = self.ui
+        s.fill((0, 0, 0, 0))
+        quien = None
+        pregunta = None
+        libre = self.trans is None and self.menu is None and self.modal is None
+        if self.scene == "ext":
+            zona = "Exterior · Centro de salud"
+            if libre and self.near_door():
+                pregunta = "ENTRAR"
+            elif libre and self.cerca_buzon():
+                pregunta = "VER CAPÍTULOS"
+        elif self.scene == "map":
+            cx, cy = self.cam_mapa()
+            zona = "Centro de salud"
+            quien = (self.mx + 16 - cx, self.my - cy)
+            puerta = self._puerta_hilo_cerca() if (self.capitulo == 3 and self.c3["inicio"]) else None
+            if libre and puerta is not None:
+                pregunta = f"ABRIR LA PUERTA {puerta + 1}"
+            elif libre and not self.lock_door and self._puerta_actual():
+                pregunta = "ENTRAR"
+            elif libre and self.en_salida():
+                pregunta = "SALIR"
+        else:
+            zona = SALAS[self.sala]["name"]
+            quien = (self.px + SPRITE / 2, GROUND - FEET)
+            tarea = self._tarea_sala() if libre else None
+            if tarea == "modulos":
+                pregunta = "DECIDIR LOS MÓDULOS"
+            elif tarea in CONFLICTS:
+                pregunta = "RESOLVER EL CONFLICTO"
+            elif tarea == "hilo":
+                pregunta = "HABLAR"
+            elif libre and self.px < 34:
+                pregunta = "SALIR"
+
+        self._ui_barra(s, zona)
+        if self.modal is None:
+            if self.scene == "ext":
+                self._ui_mision(s)
+            else:
+                self._ui_panel(s)
+            self._ui_actores(s)
+            self._ui_aviso(s)
+            if pregunta:
+                if quien:
+                    self._ui_tecla_flotante(s, quien[0], quien[1])
+                self._ui_prompt(s, "PRESIONE", "E", "PARA " + pregunta)
+            if self.menu is None:
+                self._ui_ayuda(s, self.scene == "map")
+        self._ui_modal(s)
+        self._ui_logro(s)
+        self._ui_menu(s)
+        screen.blit(pygame.transform.scale(s, (SCREEN_W, SCREEN_H)), (0, 0))
+    # ======================== FIN DE LOS CAPÍTULOS 2 Y 3 ========================
+
 
 def main():
     pygame.init()
