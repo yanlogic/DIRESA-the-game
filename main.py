@@ -993,8 +993,12 @@ CONFLICTOS_C2 = {
             ("C", "Inmutabilidad con 'Adenda Ágil'", (5, 5, 4, 5), 4.85, None)],
         acuerdo="Nada se borra: el registro es inmutable. El médico corrige con el botón '+ Nota de Rectificación', "
                 "que genera una adenda firmada, y la auditoría corre en segundo plano sin hacer lenta la pantalla.",
+        intro=[("jeremy", "Buen día. Estoy atendiendo una consulta y me equivoqué en el diagnóstico.", "neutral"),
+               ("carmen", "Soy Carmen, del MINSA. Reviso que las historias clínicas cumplan la NTS 139.", "neutral")],
         antes=[("jeremy", "Si me equivoco en un diagnóstico, necesito corregirlo rápido."),
                ("carmen", "La NTS 139 no permite borrar registros clínicos."),
+               ("jeremy", "Pero tengo pacientes esperando. No puedo perder tiempo en cada corrección.", "molesto"),
+               ("carmen", "Si borramos algo, ya nadie sabe qué se escribió ni quién lo hizo.", "preocupado"),
                ("yo", "Los dos tienen razón. Evaluemos tres caminos con criterios con peso.")],
         despues=[("jeremy", "Con la nota de rectificación corrijo en segundos."),
                  ("carmen", "Y como nada se borra, la norma se cumple.")]),
@@ -1007,8 +1011,11 @@ CONFLICTOS_C2 = {
             ("C", "Cola virtual con despacho en 1 clic", (5, 5, 4, 5), 4.80, None)],
         acuerdo="La receta llega al instante a farmacia. El técnico identifica al paciente por DNI, entrega el "
                 "medicamento y pulsa 'Dispensar': el stock se descuenta solo (RF-008), sin papel.",
+        intro=[("patroclo", "Buenos días. Aquí entregamos los medicamentos y lo anotamos todo en el cuaderno.", "neutral"),
+               ("yasuri", "Hola, vengo a recoger mi receta.", "neutral")],
         antes=[("patroclo", "Cada medicamento que sale tiene que descontarse del stock."),
                ("yasuri", "¡Pero no queremos hacer cola para recoger la receta!"),
+               ("patroclo", "Y yo no puedo atender rápido si tengo que anotar cada salida a mano.", "molesto"),
                ("yo", "Busquemos la opción que cuide el stock sin hacerlos esperar.")],
         despues=[("patroclo", "Pulso 'Dispensar' y el stock se descuenta solo."),
                  ("yasuri", "Y mi receta llega al instante. ¡Sin colas!")]),
@@ -1021,8 +1028,12 @@ CONFLICTOS_C2 = {
             ("C", "Autoguardado local cada 30 s, cifrado", (4, 5, 3, 4), 4.20, None)],
         acuerdo="El sistema guarda en el equipo cada 30 segundos lo que se registra, cifrado, y lo borra cuando "
                 "termina de sincronizar con el servidor (RNF-008). No se pierde trabajo y los datos quedan protegidos.",
+        intro=[("sara", "Estoy tomando la presión y la temperatura de los pacientes.", "neutral"),
+               ("leonidas", "Yo soy de TI. Reviso que los equipos y los datos estén seguros.", "neutral")],
         antes=[("sara", "¡Se cortó la conexión y estaba registrando los signos vitales!"),
                ("leonidas", "Si se guarda en el equipo sin protección, los datos de salud quedan expuestos (Ley 29733)."),
+               ("sara", "Si no se guarda en el equipo, pierdo lo que ya registré.", "preocupado"),
+               ("leonidas", "Lo entiendo, pero son datos de salud. No pueden quedar expuestos.", "preocupado"),
                ("yo", "Comparemos tres formas de guardar con criterios con peso.")],
         despues=[("sara", "Ahora ya no pierdo lo registrado si se va la conexión."),
                  ("leonidas", "Y los datos viajan cifrados. Así sí.")]),
@@ -2158,12 +2169,12 @@ class Game:
     def _ui_ayuda(self, s, mapa):
         """Cuadrito abajo a la izquierda con las teclas (arriba: moverte, medio: correr, abajo: panel)."""
         teclas = ("W", "A", "S", "D") if mapa else ("A", "D")
-        filas = 3 if self.scene != "ext" else 2
+        filas = (3 if self.scene != "ext" else 2) + 1
         w_mover = 8 + len(teclas) * 13 + ui_ancho("MOVER") + 6
         activo = getattr(self, "correr_toggle", False)
         txt_correr = "CORRER (ON)" if activo else "CORRER"
         w_correr = 10 + ui_ancho("SHIFT") + 6 + 5 + ui_ancho(txt_correr) + 6
-        w = max(w_mover, w_correr)
+        w = max(w_mover, w_correr, 10 + ui_ancho("M") + 13 + ui_ancho("SONIDO (NO)") + 6)
         alto = 6 + 14 * filas
         ui_marco(s, 4, H - 4 - alto, w, alto, borde=(62, 78, 116), brillo=False)
         y = H - 4 - alto + 4
@@ -2179,10 +2190,17 @@ class Game:
         s.blit(ui_texto(txt_correr, col), (10 + kx + 5, y + 2))
 
         # Fila panel
-        if filas == 3:
+        if self.scene != "ext":
             y += 14
             kx = ui_tecla(s, 10, y, "TAB")
             s.blit(ui_texto("PANEL", UI_GRIS), (10 + kx + 5, y + 2))
+
+        # Fila sonido
+        y += 14
+        voz = getattr(self, "_voz", None)
+        suena = True if voz is None else voz.activo
+        kx = ui_tecla(s, 10, y, "M")
+        s.blit(ui_texto("SONIDO" if suena else "SONIDO (NO)", UI_GRIS if suena else UI_ORO), (10 + kx + 5, y + 2))
 
     # --- avisos, misión y logro ------------------------------------------------
     def _ui_aviso(self, s):
@@ -2467,7 +2485,7 @@ class Game:
         if tipo == "dialogo":
             total = sum(len(l) for l in self._texto_dialogo(p))
             if sigue:
-                if m["t"] * 1.5 < total:
+                if m["t"] * TEXTO_VEL < total:
                     m["t"] = 9999                               # muestra todo el texto de golpe
                 else:
                     self._modal_siguiente()
@@ -2544,6 +2562,7 @@ class Game:
         if self.modal is not None:
             m = self.modal
             m["t"] += 1
+            self._sonar_voz(m)
             if m["paginas"][m["i"]]["tipo"] == "apagon" and m["t"] > 120:
                 self._modal_siguiente()
             left = right = up = down = run = False
@@ -2557,6 +2576,22 @@ class Game:
                 and self.c3["fin"] and not self.c3["cierre"]):
             self.c3["cierre"] = True
             self._abrir_modal(self._paginas_cierre())
+
+    def _sonar_voz(self, m):
+        """Cada letra nueva del diálogo hace un 'blip' con la voz del que habla."""
+        p = m["paginas"][m["i"]]
+        if p["tipo"] != "dialogo":
+            return
+        if not hasattr(self, "_voz"):
+            self._voz = Voces()
+        texto = "".join(self._texto_dialogo(p))
+        antes = min(int((m["t"] - 1) * TEXTO_VEL), len(texto))
+        ahora = min(int(m["t"] * TEXTO_VEL), len(texto))
+        if ahora - antes > 6:                                   # se saltó el texto de golpe: sin sonido
+            return
+        for ch in texto[antes:ahora]:
+            if ch.isalnum():
+                self._voz.letra(p["quien"])
 
     def _tarea_sala(self):
         """Qué se puede hacer con E en esta sala (según el capítulo), si estás cerca de alguien."""
@@ -2639,6 +2674,7 @@ class Game:
     # --- Capítulo 2: los módulos ---------------------------------------------
     def _paginas_modulos(self):
         return [
+            dict(tipo="dialogo", quien="arian", emo="neutral", texto="Buenos días, soy Arian, de Administración. Vengo a hablar del presupuesto."),
             dict(tipo="dialogo", quien="arian", emo="preocupado", texto="El presupuesto de la DIRESA solo alcanza para 2 de los 5 módulos."),
             dict(tipo="dialogo", quien="arian", emo="pensativo", texto="Tienes 2 monedas. ¿En qué módulos las pondrías?"),
             dict(tipo="modulos"),
@@ -2692,11 +2728,14 @@ class Game:
         a, b = CONFLICTS[k]["members"]
         lado = {a: "izq", b: "der", "yo": "izq"}
         pags = []
+        for t in conf.get("intro", []):                         # se presentan antes del problema
+            pags.append(dict(tipo="dialogo", quien=t[0], texto=t[1], lado=lado.get(t[0], "izq"),
+                             emo=t[2] if len(t) > 2 else EMO_ANTES.get(t[0])))
         if conf.get("apagon"):
             pags.append(dict(tipo="apagon"))
-        for quien, texto in conf["antes"]:
-            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq"),
-                             emo=EMO_ANTES.get(quien)))
+        for t in conf["antes"]:
+            pags.append(dict(tipo="dialogo", quien=t[0], texto=t[1], lado=lado.get(t[0], "izq"),
+                             emo=t[2] if len(t) > 2 else EMO_ANTES.get(t[0])))
         crit = " · ".join(f"C{i + 1} {n} ({p}%)" for i, (n, p) in enumerate(conf["criterios"]))
         pags.append(dict(tipo="alternativas", conf=k, crit=crit))
         letra, nombre, notas, total, _ = conf["alternativas"][-1]
@@ -2720,8 +2759,14 @@ class Game:
     # --- Capítulo 3: el hilo dorado --------------------------------------------
     def _paginas_inicio_hilo(self):
         return [
-            dict(tipo="dialogo", quien="yasuri", emo="preocupado", texto="Buenos días. Vengo a atenderme, pero perdí mi DNI...", lado="der"),
-            dict(tipo="dialogo", quien="mariajose", emo="preocupado", texto="Sin DNI igual tengo que abrirle su historia clínica. ¿El sistema lo permite?"),
+            dict(tipo="dialogo", quien="yasuri", emo="neutral", texto="Buenos días. Vengo a atenderme.", lado="der"),
+            dict(tipo="dialogo", quien="mariajose", emo="neutral", texto="Buenos días. Dame tu DNI y abro tu historia."),
+            dict(tipo="dialogo", quien="yasuri", emo="preocupado", texto="Ay, no... creo que perdí mi DNI.", lado="der"),
+            dict(tipo="dialogo", quien="yo", emo="sorprendido", texto="¿Sin DNI? ¿Y ahora cómo la registramos?"),
+            dict(tipo="dialogo", quien="mariajose", emo="molesto",
+                 texto="Antes, sin DNI, la historia se quedaba sin abrir o se duplicaba en papel."),
+            dict(tipo="dialogo", quien="mariajose", emo="preocupado",
+                 texto="Sin DNI igual tengo que abrirle su historia clínica. ¿El sistema lo permite?"),
             dict(tipo="dialogo", quien="yo", emo="neutral",
                  texto="Sí. Sigamos el hilo de ese requerimiento por todo el expediente: son 4 puertas, una por artefacto."),
         ]
@@ -2750,6 +2795,10 @@ class Game:
             self.c3["puertas"] += 1
             if self.c3["puertas"] == len(PUERTAS_HILO):
                 pags += [
+                    dict(tipo="dialogo", quien="yasuri", emo="contento", lado="der",
+                         texto="¡Ya tengo mi historia clínica, gracias!"),
+                    dict(tipo="dialogo", quien="mariajose", emo="contento",
+                         texto="Con el código temporal quedó registrada."),
                     dict(tipo="dialogo", quien="yo", emo="contento",
                          texto="Así con cualquier requisito: si uno cambia, sabemos exactamente qué más cambia."),
                     dict(tipo="tarjeta", titulo="¿Y SI EL PROFE ELIGE OTRO REQUISITO?", fuente="Tabla 38", icono="ok",
@@ -3135,7 +3184,7 @@ class Game:
         s.blit(ui_texto("  ·  " + rol, UI_GRIS), (nx + 7 + ui_ancho(nombre), y - 9))
         # texto que se escribe solo
         tx = x + 8 if der else x + 74
-        quedan = int(m["t"] * 1.5)
+        quedan = int(m["t"] * TEXTO_VEL)
         for i, l in enumerate(self._texto_dialogo(p)):
             if quedan <= 0:
                 break
@@ -3343,6 +3392,12 @@ class Game:
 
     # --- teclas y mouse -----------------------------------------------------
     def tecla(self, key):
+        if key == pygame.K_m:                                   # silenciar / activar las voces
+            if not hasattr(self, "_voz"):
+                self._voz = Voces()
+            self._voz.activo = not self._voz.activo
+            self.show_banner("Sonido: " + ("ACTIVADO" if self._voz.activo else "SILENCIADO"))
+            return None
         if self.fase == "titulo":
             self._ini_init()
             if key in (pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s):
@@ -4007,6 +4062,78 @@ def _c_caja(s, x, y, tono=0):
     pygame.draw.rect(s, col, (x, y, 11, 10))
     pygame.draw.rect(s, (60, 160, 90), (x + 4, y + 2, 3, 6))
     pygame.draw.rect(s, (60, 160, 90), (x + 2, y + 4, 7, 2))
+
+
+# ----------------------------------------------------------------------------
+# VOCES 8 BITS: cada personaje tiene su propio "blip" (onda, tono y duración).
+# Se generan con código (sin archivos de audio), así que no hay que adjuntar nada.
+# ----------------------------------------------------------------------------
+TEXTO_VEL = 0.7            # letras por cuadro en la máquina de escribir (~42 letras por segundo)
+VOCES = {                  # onda: cuadrada con "duty" (ancho de pulso) o triangular · tono en Hz
+    "yo":        dict(onda=("pulso", 0.50), hz=520, ms=46),
+    "jeremy":    dict(onda=("pulso", 0.25), hz=430, ms=44),
+    "carmen":    dict(onda=("tri", 0), hz=640, ms=48),
+    "patroclo":  dict(onda=("pulso", 0.50), hz=300, ms=52),
+    "yasuri":    dict(onda=("pulso", 0.125), hz=720, ms=40),
+    "sara":      dict(onda=("tri", 0), hz=560, ms=46),
+    "leonidas":  dict(onda=("pulso", 0.25), hz=250, ms=50),
+    "arian":     dict(onda=("pulso", 0.50), hz=205, ms=56),
+    "mariajose": dict(onda=("pulso", 0.125), hz=610, ms=44),
+}
+
+
+class Voces:
+    RATE = 22050
+
+    def __init__(self):
+        self.ok = False
+        self.activo = True
+        self.cache = {}
+        self.cuenta = 0
+        try:
+            if not pygame.mixer.get_init():
+                pygame.mixer.init(self.RATE, -16, 1, 512)
+            ini = pygame.mixer.get_init()                       # (frecuencia, formato, canales)
+            self.rate, self.canales = ini[0], ini[2]
+            self.ok = ini[1] == -16
+
+        except Exception:
+            self.ok = False
+
+    def _onda(self, cfg, hz, ms):
+        import array
+        n = int(self.rate * ms / 1000)
+        datos = array.array("h")
+        tipo, duty = cfg["onda"]
+        for i in range(n):
+            fase = (i * hz / self.rate) % 1.0
+            if tipo == "tri":
+                v = 4 * abs(fase - 0.5) - 1
+            else:
+                v = (2 - 2 * duty if fase < duty else -2 * duty) / max(2 - 2 * duty, 2 * duty)   # sin "clic" de offset
+            env = min(1.0, i / 90) * (1 - i / n) ** 0.7              # sube rápido y se apaga
+            dato = int(v * env * 5200)
+            for _ in range(self.canales):                       # mono o estéreo, según el mezclador
+                datos.append(dato)
+        return pygame.mixer.Sound(buffer=datos.tobytes())
+
+    def _sonidos(self, quien):
+        if quien not in self.cache:
+            cfg = VOCES.get(quien, VOCES["yo"])
+            self.cache[quien] = [self._onda(cfg, cfg["hz"] * f, cfg["ms"]) for f in (0.94, 1.0, 1.09)]
+        return self.cache[quien]
+
+    def letra(self, quien):
+        """Llamar cada vez que aparece una letra; suena una de cada 3."""
+        if not (self.ok and self.activo):
+            return
+        self.cuenta += 1
+        if self.cuenta % 3:
+            return
+        try:
+            random.choice(self._sonidos(quien)).play()
+        except Exception:
+            self.ok = False
 
 
 def main():
