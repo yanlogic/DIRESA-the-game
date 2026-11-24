@@ -1,6 +1,8 @@
 import math
 import os
 import random
+import re
+import subprocess
 import sys
 
 import pygame
@@ -965,15 +967,15 @@ SUPUESTOS = [
 # ok = True si es uno de los 2 que entran en la primera fase
 MODULOS = [
     dict(nombre="Historia Clínica Electrónica", moscow="MUST HAVE", ok=True,
-         nota="Must have: sin ella no hay atención ni se cumple la NTS 139 (HU-001 a HU-004)."),
+         nota="Must have: es la base de la que dependen los otros módulos y donde aplica la NTS 139 (HU-001 a HU-004)."),
     dict(nombre="Receta Electrónica / Farmacia", moscow="MUST HAVE", ok=True,
-         nota="Must have: emitir la receta (HU-005). Dispensarla es Should dentro del mismo módulo (HU-006)."),
-    dict(nombre="Inventario completo", moscow="WON'T (ESTA VEZ)", ok=False,
-         nota="Won't have en esta fase (HU-009): pasa a la Fase 2."),
-    dict(nombre="Derivaciones", moscow="COULD HAVE", ok=False,
-         nota="Could have (HU-010): con el CR-002 pasa a la Fase 2."),
-    dict(nombre="Reportes en tiempo real", moscow="FASE 2", ok=False,
-         nota="No es Must have: queda fuera de los 2 módulos que paga el presupuesto."),
+         nota="Must have: la receta elimina el cuaderno de farmacia y los errores de dispensación, con baja complejidad."),
+    dict(nombre="Derivaciones (referencias)", moscow="COULD HAVE", ok=False,
+         nota="Could have (HU-010): con el CR-002 pasa a la Fase 2. Puede operar manual sin riesgo clínico."),
+    dict(nombre="Inventario de medicamentos", moscow="WON'T (ESTA VEZ)", ok=False,
+         nota="Won't have en esta fase (HU-009): pasa a la Fase 2. Puede operar manual sin riesgo clínico."),
+    dict(nombre="Reportes e indicadores", moscow="FASE 2", ok=False,
+         nota="Se difiere a la Fase 2: puede operar manual en el corto plazo sin riesgo clínico."),
 ]
 WSJF = [("HU-003", "Registrar diagnóstico CIE-10", 3.0), ("HU-002", "Registrar triaje", 2.67),
         ("HU-004", "Rectificar registro clínico", 2.67), ("HU-001", "Crear historia clínica", 2.5),
@@ -1025,6 +1027,15 @@ CONFLICTOS_C2 = {
         despues=[("sara", "Ahora ya no pierdo lo registrado si se va la conexión."),
                  ("leonidas", "Y los datos viajan cifrados. Así sí.")]),
 }
+# Expresión del retrato según la situación (assets/retrato_<personaje>_<emocion>.png)
+EMO_ANTES = {"jeremy": "preocupado", "carmen": "molesto", "patroclo": "preocupado", "yasuri": "molesto",
+             "sara": "angustiado", "leonidas": "molesto", "arian": "preocupado", "yo": "pensativo"}
+EMO_DESPUES = {"jeremy": "aliviado", "carmen": "contento", "patroclo": "aliviado", "yasuri": "contento",
+               "sara": "aliviado", "leonidas": "contento", "arian": "contento", "yo": "contento"}
+# si falta el PNG de una emoción se prueba con una parecida, y al final con la neutral
+EMO_PARECIDAS = {"aliviado": ["contento"], "contento": ["aliviado"], "angustiado": ["preocupado"],
+                 "preocupado": ["pensativo", "angustiado"], "pensativo": ["preocupado"],
+                 "molesto": ["preocupado"], "sorprendido": ["neutral"]}
 TAREA_DE_SALA = {"reuniones": "modulos", "consultorio": "c1", "farmacia": "c2", "triaje": "c3"}
 
 # Quién visita qué sala en cada capítulo: id -> (sala, posición en el plano, x en la sala)
@@ -2487,6 +2498,24 @@ class Game:
                     m["msg"] = (mod["nota"], UI_ROJO)
                 if len(m["elegidos"]) >= 2:
                     m["msg"] = ("¡Bien! Las 2 monedas van a los Must have. Presiona E para continuar.", UI_ORO)
+        elif tipo == "abrir":
+            if p.get("abierto"):
+                if sigue:
+                    self._modal_siguiente()
+            elif key in (pygame.K_a, pygame.K_d, pygame.K_LEFT, pygame.K_RIGHT) or arriba or abajo:
+                m["sel"] = 1 - m["sel"]
+            elif sigue and m["t"] > 8:
+                if m["sel"] == 1:
+                    self._modal_siguiente()
+                else:
+                    nombre = DIAGRAMAS[p["clave"]][1]
+                    ruta = buscar_diagrama(p["clave"])
+                    if ruta and abrir_archivo(ruta):
+                        p["abierto"] = True
+                        m["msg"] = ("ABIERTO EN OTRA VENTANA. CUANDO TERMINES, VUELVE AL JUEGO Y PRESIONA E.", UI_VERDE)
+                    else:
+                        m["msg"] = (f"NO ENCUENTRO EL ARCHIVO. GUARDA UNO LLAMADO {nombre} (PNG, PDF...) EN LA CARPETA "
+                                    "DIAGRAMAS DEL JUEGO. CON NO SIGUES SIN ABRIRLO.", UI_ROJO)
         elif tipo == "alternativas":
             conf = CONFLICTOS_C2[p["conf"]]
             n = len(conf["alternativas"])
@@ -2610,15 +2639,15 @@ class Game:
     # --- Capítulo 2: los módulos ---------------------------------------------
     def _paginas_modulos(self):
         return [
-            dict(tipo="dialogo", quien="arian", texto="El presupuesto de la DIRESA solo alcanza para 2 de los 5 módulos."),
-            dict(tipo="dialogo", quien="arian", texto="Tienes 2 monedas. ¿En qué módulos las pondrías?"),
+            dict(tipo="dialogo", quien="arian", emo="preocupado", texto="El presupuesto de la DIRESA solo alcanza para 2 de los 5 módulos."),
+            dict(tipo="dialogo", quien="arian", emo="pensativo", texto="Tienes 2 monedas. ¿En qué módulos las pondrías?"),
             dict(tipo="modulos"),
             dict(tipo="tarjeta", titulo="MOSCOW: QUÉ ENTRA EN LA PRIMERA FASE", fuente="Tabla 14 y sección 2.7",
                  lineas=[("MoSCoW fue el filtro para respetar el presupuesto de 2 de 5 módulos:", UI_GRIS),
                          ("MUST: Historia clínica y receta (HU-001 a HU-005), auditoría (HU-007) y usuarios (HU-008).", UI_VERDE),
                          ("SHOULD: Dispensar la receta (HU-006), dentro del mismo módulo.", (120, 200, 255)),
                          ("COULD: Derivaciones (HU-010) → Fase 2.", (255, 196, 90)),
-                         ("WON'T (esta vez): Inventario completo (HU-009) → Fase 2.", UI_ROJO)]),
+                         ("WON'T (esta vez): Gestión completa de inventario (HU-009) → Fase 2.", UI_ROJO)]),
             dict(tipo="tarjeta", titulo="WSJF: EN QUÉ ORDEN SE CONSTRUYE", fuente="Tabla 14",
                  lineas=[("WSJF = costo del retraso / tamaño. Ordena las historias Must para cada sprint:", UI_GRIS)],
                  dibujo=self._dibujo_wsjf),
@@ -2632,8 +2661,10 @@ class Game:
                          ("Derivaciones (RF-009, RF-012 y RF-013) pasan a Could have y se van a la Fase 2.", UI_CREMA),
                          ("El CU-010 queda fuera de la primera fase.", UI_CREMA),
                          ("Así nos concentramos en los 2 módulos: Historia Clínica Electrónica y Receta Electrónica/Farmacia.", UI_VERDE),
+                         ("Disparador: el presupuesto cubre solo 2 de 5 módulos. Impacto: se reduce el alcance y el tiempo "
+                          "(aprox. -3 días de trabajo).", UI_ORO),
                          ("Aprobado por los stakeholders (Administración y MINSA), acta del 02/11/2026.", UI_GRIS)]),
-            dict(tipo="dialogo", quien="arian",
+            dict(tipo="dialogo", quien="arian", emo="contento",
                  texto="Con MoSCoW decidimos qué entra y con WSJF en qué orden se construye. ¡Decisión tomada!"),
         ]
 
@@ -2664,7 +2695,8 @@ class Game:
         if conf.get("apagon"):
             pags.append(dict(tipo="apagon"))
         for quien, texto in conf["antes"]:
-            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq")))
+            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq"),
+                             emo=EMO_ANTES.get(quien)))
         crit = " · ".join(f"C{i + 1} {n} ({p}%)" for i, (n, p) in enumerate(conf["criterios"]))
         pags.append(dict(tipo="alternativas", conf=k, crit=crit))
         letra, nombre, notas, total, _ = conf["alternativas"][-1]
@@ -2672,7 +2704,12 @@ class Game:
                          fuente=f"{conf['tabla']}, sección 2.5", icono="ok",
                          lineas=[(nombre, UI_ORO), (conf["acuerdo"], UI_CREMA)]))
         for quien, texto in conf["despues"]:
-            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq")))
+            pags.append(dict(tipo="dialogo", quien=quien, texto=texto, lado=lado.get(quien, "izq"),
+                             emo=EMO_DESPUES.get(quien)))
+        if k == "c1":                                           # el BPMN es el proceso de rectificación (Figura 16)
+            pags.append(dict(tipo="dialogo", quien="yo", emo="contento",
+                             texto="Esa rectificación es un proceso con flujos de excepción. Así lo modelamos en BPMN."))
+            pags.append(dict(tipo="abrir", clave="bpmn", abierto=False))
         return pags
 
     def _fin_conflicto(self, k):
@@ -2683,10 +2720,10 @@ class Game:
     # --- Capítulo 3: el hilo dorado --------------------------------------------
     def _paginas_inicio_hilo(self):
         return [
-            dict(tipo="dialogo", quien="yasuri", texto="Buenos días. Vengo a atenderme, pero perdí mi DNI...", lado="der"),
-            dict(tipo="dialogo", quien="mariajose", texto="Sin DNI igual tengo que abrirle su historia clínica. ¿El sistema lo permite?"),
-            dict(tipo="dialogo", quien="yo",
-                 texto="Sí. Sigamos el hilo de ese pedido por todo el expediente: son 4 puertas, una por artefacto."),
+            dict(tipo="dialogo", quien="yasuri", emo="preocupado", texto="Buenos días. Vengo a atenderme, pero perdí mi DNI...", lado="der"),
+            dict(tipo="dialogo", quien="mariajose", emo="preocupado", texto="Sin DNI igual tengo que abrirle su historia clínica. ¿El sistema lo permite?"),
+            dict(tipo="dialogo", quien="yo", emo="neutral",
+                 texto="Sí. Sigamos el hilo de ese requerimiento por todo el expediente: son 4 puertas, una por artefacto."),
         ]
 
     def _fin_inicio_hilo(self):
@@ -2705,11 +2742,15 @@ class Game:
             self.show_banner(f"Sigue el hilo: primero abre la puerta {self.c3['puertas'] + 1}")
             return
         pags = [self._tarjeta_puerta(i)]
+        if i == 1:
+            pags.append(dict(tipo="abrir", clave="casosdeuso", abierto=False))
+        elif i == 2:
+            pags.append(dict(tipo="abrir", clave="clases", abierto=False))
         if i == self.c3["puertas"]:
             self.c3["puertas"] += 1
             if self.c3["puertas"] == len(PUERTAS_HILO):
                 pags += [
-                    dict(tipo="dialogo", quien="yo",
+                    dict(tipo="dialogo", quien="yo", emo="contento",
                          texto="Así con cualquier requisito: si uno cambia, sabemos exactamente qué más cambia."),
                     dict(tipo="tarjeta", titulo="¿Y SI EL PROFE ELIGE OTRO REQUISITO?", fuente="Tabla 38", icono="ok",
                          lineas=[("Una buena segunda opción es la nota de rectificación:", UI_GRIS),
@@ -2734,61 +2775,21 @@ class Game:
                                  "Sin DNI genera un código temporal único.", UI_GRIS)])
         if i == 1:
             return dict(tipo="tarjeta", titulo="PUERTA 2 · EL CASO DE USO", fuente="Figura 2 y Tabla 18", icono="puerta",
-                        lineas=[("Ese requisito se vuelve el CU-001 · Abrir / crear historia clínica.", UI_ORO)],
-                        dibujo=self._dibujo_cu)
+                        lineas=[("Ese requisito se vuelve el CU-001 · Abrir / crear historia clínica. Actor: Sra. María José.", UI_ORO),
+                                ("Flujo principal (6 pasos): ingresa el DNI, el sistema verifica si ya existe, si no existe se crea "
+                                 "la historia, se valida, se asigna el número único de HCE y se guarda.", UI_CREMA),
+                                ("A1: si ya existe, se recupera sin crear otra.  E-1: faltan datos obligatorios.  "
+                                 "E-2: el paciente no tiene DNI.", UI_GRIS)])
         if i == 2:
-            return dict(tipo="tarjeta", titulo="PUERTA 3 · LAS CLASES", fuente="Figuras 7 y 8, Tabla 32", icono="puerta",
-                        lineas=[("En el diagrama de clases, RF-001 vive en estas 3 clases:", UI_GRIS)],
-                        dibujo=self._dibujo_clases)
+            return dict(tipo="tarjeta", titulo="PUERTA 3 · LAS CLASES", fuente="Figura 7 y Tabla 32", icono="puerta",
+                        lineas=[("En el diagrama de clases, RF-001 vive en 3 clases (Tabla 32):", UI_GRIS),
+                                ("CL-001 Persona: datos personales.", UI_CREMA),
+                                ("CL-002 Paciente: DNI o código temporal.", UI_CREMA),
+                                ("CL-005 HistoriaClinica: número único de HCE.", UI_CREMA),
+                                ("Si el paciente no tiene DNI, el código temporal vive en Paciente.", UI_VERDE)])
         return dict(tipo="tarjeta", titulo="PUERTA 4 · LA MATRIZ", fuente="Tabla 38", icono="puerta",
                     lineas=[("Todo se junta en la fila F-01 de la matriz Requisito–CU–Clase–Prueba:", UI_GRIS)],
                     dibujo=self._dibujo_matriz)
-
-    def _dibujo_cu(self, s, x, y, w):
-        # actor (monigote) -> elipse del caso de uso
-        ax, ay = x + 18, y + 4
-        pygame.draw.circle(s, UI_CREMA, (ax, ay + 4), 4, 1)
-        ui_rect(s, UI_CREMA, ax, ay + 8, 1, 10)
-        ui_rect(s, UI_CREMA, ax - 5, ay + 11, 11, 1)
-        pygame.draw.line(s, UI_CREMA, (ax, ay + 18), (ax - 4, ay + 25))
-        pygame.draw.line(s, UI_CREMA, (ax, ay + 18), (ax + 4, ay + 25))
-        s.blit(ui_texto("SRA. MARÍA JOSÉ", UI_ORO), (x, y + 32))
-        pygame.draw.line(s, UI_GRIS, (ax + 10, ay + 12), (x + 150, ay + 12))
-        pygame.draw.ellipse(s, UI_FONDO2, (x + 150, y, 150, 30))
-        pygame.draw.ellipse(s, UI_ORO, (x + 150, y, 150, 30), 1)
-        t = ui_texto("CU-001 ABRIR / CREAR HC", UI_CREMA)
-        s.blit(t, (x + 225 - t.get_width() // 2, y + 10))
-        yy = y + 46
-        s.blit(ui_texto("Excepción E-2 · Paciente sin DNI:", UI_ROJO), (x, yy))
-        pasos = ["1. El paciente no tiene DNI.", "2. Se elige 'Paciente sin DNI'.",
-                 "3. El sistema genera un código temporal único.", "4. El flujo sigue con los datos del paciente."]
-        for k, p in enumerate(pasos):
-            s.blit(ui_texto(p, UI_CREMA), (x + 6, yy + 11 + k * 10))
-        return 98
-
-    def _dibujo_clases(self, s, x, y, w):
-        cajas = [("CL-001", "Persona", "datos personales"), ("CL-002", "Paciente", "DNI o código temporal"),
-                 ("CL-005", "HistoriaClinica", "número único de HCE")]
-        gap = 10
-        bw = (w - 2 * gap) // 3
-        for k, (cl, nombre, nota) in enumerate(cajas):
-            bx = x + k * (bw + gap)
-            ui_rect(s, UI_LINEA, bx, y, bw, 48)
-            ui_rect(s, (34, 46, 80), bx + 1, y + 1, bw - 2, 46)
-            ui_rect(s, UI_ORO_OSC, bx + 1, y + 13, bw - 2, 1)
-            t = ui_texto(nombre, UI_ORO)
-            s.blit(t, (bx + bw // 2 - t.get_width() // 2, y + 3))
-            s.blit(ui_texto(cl, UI_GRIS), (bx + 5, y + 16))
-            for j, l in enumerate(ui_partir(nota, bw - 10)[:2]):
-                s.blit(ui_texto(l, UI_CREMA), (bx + 5, y + 26 + j * 10))
-            if k:
-                ui_rect(s, UI_CREMA, bx - gap, y + 24, gap, 1)
-        yy = y + 56
-        s.blit(ui_texto("El código temporal vive en Paciente (Tabla 32).", UI_VERDE), (x, yy))
-        for k, l in enumerate(ui_partir("En la secuencia del CU-001 (Figura 8): si el paciente no tiene DNI, "
-                                        "el sistema genera el código temporal.", w - 4)):
-            s.blit(ui_texto(l, UI_CREMA), (x, yy + 12 + k * 10))
-        return 88
 
     def _dibujo_matriz(self, s, x, y, w):
         pruebas = "PR-001 PR-002 PR-003"
@@ -2985,17 +2986,28 @@ class Game:
                 xs = [self._sala_x(n["id"]) + SPRITE / 2 for n in presentes]
                 self._ui_rayo(s, sum(xs) / len(xs), GROUND - FEET - 4 + math.sin(self.t * 0.2) * 2)
 
-    def _retrato(self, quien):
-        """Retrato 60x60 para los diálogos (usa assets/retrato_<id>.png si lo dibujas tú)."""
-        if quien in self._retratos:
-            return self._retratos[quien]
-        p = res(f"assets/retrato_{quien}.png")
-        if os.path.exists(p):
-            im = pygame.transform.scale(pygame.image.load(p).convert_alpha(), (60, 60))
-        else:
+    def _retrato(self, quien, emo=None):
+        """Retrato 60x60 para los diálogos. Busca assets/retrato_<personaje>_<emocion>.png;
+        si falta, prueba con una emoción parecida, luego con la neutral y al final con el muñequito."""
+        clave = (quien, emo)
+        if clave in self._retratos:
+            return self._retratos[clave]
+        pid = "jugador" if quien == "yo" else quien
+        pruebas = []
+        if emo:
+            pruebas += [emo] + EMO_PARECIDAS.get(emo, [])
+        pruebas += ["neutral", None]
+        im = None
+        for e in pruebas:
+            p = res(f"assets/retrato_{pid}_{e}.png" if e else f"assets/retrato_{pid}.png")
+            if os.path.exists(p):
+                big = pygame.image.load(p).convert_alpha()
+                im = pygame.transform.smoothscale(big, (60, 60))
+                break
+        if im is None:
             base = self.map_player["frente"][0] if quien == "yo" else self.npc_front[quien]
             im = pygame.transform.scale(base.subsurface((6, 0, 20, 20)).copy(), (60, 60))
-        self._retratos[quien] = im
+        self._retratos[clave] = im
         return im
 
     def _ui_modal(self, s):
@@ -3010,6 +3022,8 @@ class Game:
             self._ui_apagon(s, m)
         elif tipo == "fin":
             self._ui_fin(s, m)
+        elif tipo == "abrir":
+            self._ui_abrir(s, p, m)
         else:
             ui_rect(s, (0, 0, 0, 150), 0, 0, W, H)
             x, y, w, h = 18, 26, W - 36, H - 32
@@ -3064,6 +3078,38 @@ class Game:
                 ui_tecla(s, hx, fy - 1, "E", (self.t // 24) % 2 == 1)
                 s.blit(ui_texto(pie, UI_CREMA), (hx + 13, fy + 1))
 
+    def _ui_abrir(self, s, p, m):
+        """Aviso: ¿quieres abrir el diagrama? (SÍ lo abre desde la carpeta diagramas)."""
+        ui_rect(s, (0, 0, 0, 150), 0, 0, W, H)
+        bw, bh = 290, 118
+        x, y = (W - bw) // 2, (H - bh) // 2
+        ui_marco(s, x, y, bw, bh)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, bw - 6, 13)
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 16, bw - 6, 1)
+        s.blit(ui_texto("ABRIR DIAGRAMA", UI_ORO), (x + 9, y + 4))
+        yy = y + 22
+        for l in ui_partir("¿QUIERES ABRIR " + DIAGRAMAS[p["clave"]][0] + "?", bw - 18):
+            s.blit(ui_texto(l, UI_CREMA), (x + 9, yy))
+            yy += 10
+        if m["msg"]:
+            texto, color = m["msg"]
+            for l in ui_partir(texto, bw - 18)[:4]:
+                s.blit(ui_texto(l, color), (x + 9, yy + 3))
+                yy += 10
+        if p.get("abierto"):
+            ui_tecla(s, x + bw - 78, y + bh - 17, "E", (self.t // 24) % 2 == 1)
+            s.blit(ui_texto("CONTINUAR", UI_CREMA), (x + bw - 65, y + bh - 15))
+            return
+        for k, txt in enumerate(("SÍ, ABRIRLO", "NO, SEGUIR")):
+            sel = (m["sel"] == k)
+            ox, oy = x + 20 + k * 136, y + bh - 31
+            ui_marco(s, ox, oy, 114, 16, borde=UI_ORO if sel else (62, 78, 116),
+                     fondo=UI_FONDO2 if sel else UI_FONDO, brillo=sel)
+            t = ui_texto(txt, UI_CREMA if sel else UI_GRIS)
+            s.blit(t, (ox + (114 - t.get_width()) // 2, oy + 4))
+        h = ui_texto("A D ELEGIR · E ACEPTAR", (110, 124, 160))
+        s.blit(h, (x + (bw - h.get_width()) // 2, y + bh - 12))
+
     def _ui_dialogo(self, s, p, m):
         quien = p["quien"]
         if quien == "yo":
@@ -3079,7 +3125,7 @@ class Game:
         ui_rect(s, UI_LINEA, rx - 1, y + 2, 62, 62)
         ui_rect(s, (58, 74, 118), rx, y + 3, 60, 60)
         ui_rect(s, (72, 92, 146), rx, y + 3, 60, 20)
-        s.blit(self._retrato(quien), (rx, y + 3))
+        s.blit(self._retrato(quien, p.get("emo")), (rx, y + 3))
         # cartelito con el nombre
         nt = nombre.upper() + "  ·  " + rol
         nw = ui_ancho(nt) + 14
@@ -3269,6 +3315,7 @@ class Game:
     _render_c23 = render
     _update_c23 = update
     _tecla_c23 = tecla
+    _elegir_capitulo_c23 = _elegir_capitulo
 
     def iniciar_con_menu(self):
         self.fase = "titulo"
@@ -3304,6 +3351,10 @@ class Game:
                 return self._elegir_inicio(self._ti_sel)
             elif key == pygame.K_ESCAPE:
                 return "salir"
+            return None
+        if self.fase == "tarjeta_cap":
+            if key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE) and 44 < self._cap["t"] < 150:
+                self._cap["t"] = 150                           # adelanta hasta que se desvanezca
             return None
         if self.fase == "cine":
             if key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE, pygame.K_RIGHT, pygame.K_d):
@@ -3350,6 +3401,13 @@ class Game:
         if c["estado"] == "play" or c["estado"] == "in":
             c["estado"], c["e"], c["destino"] = "out", 0, len(CINE_ESCENAS) + 1
 
+    def _elegir_capitulo(self):
+        """Desde el buzón: sale la pantalla negra 'CAPÍTULO N + título' y recién ahí cambia el capítulo."""
+        self._ini_init()
+        self._cap = dict(sel=self.menu["sel"], t=0, hecho=False)
+        self.menu = None
+        self.fase = "tarjeta_cap"
+
     def _empezar_juego(self):
         self.fase = "juego"
         self._fade_in = 50
@@ -3363,6 +3421,16 @@ class Game:
         self._ini_init()
         self.t += 1
         self._ti_t += 1
+        if self.fase == "tarjeta_cap":
+            c = self._cap
+            c["t"] += 1
+            if c["t"] >= 26 and not c["hecho"]:                 # ya está todo negro: cambia el capítulo
+                c["hecho"] = True
+                self.menu = dict(sel=c["sel"])
+                self._elegir_capitulo_c23()
+            if c["t"] >= 200:
+                self.fase = "juego"
+            return
         if self.fase == "cine":
             c = self.cine
             c["t"] += 1
@@ -3386,12 +3454,49 @@ class Game:
                 screen.blit(self._fade_surf, (0, 0))
             return
         self._ini_init()
+        if self.fase == "tarjeta_cap":
+            self._render_c23(screen)
+            self._dibujar_tarjeta_cap(screen)
+            return
         s = self._ti_s
         if self.fase == "titulo":
             self._dibujar_titulo(s)
         else:
             self._dibujar_cine(s)
         pygame.transform.scale(s, (SCREEN_W, SCREEN_H), screen)
+
+    def _pintar_cap(self, s, linea1, linea2, alfa=255):
+        """Texto del capítulo: 'CAPÍTULO N' grande en dorado y el título abajo."""
+        a = _texto_grande(linea1, 3, UI_ORO, claro=(255, 226, 120))
+        b = ui_texto(linea2, UI_CREMA)
+        b = pygame.transform.scale(b, (b.get_width() * 2, b.get_height() * 2))
+        for img, y in ((a, 78), (b, 118)):
+            img = img.copy()
+            img.set_alpha(int(alfa))
+            s.blit(img, ((W - img.get_width()) // 2, y))
+
+    def _dibujar_tarjeta_cap(self, screen):
+        c = self._cap
+        t = c["t"]
+        if t < 24:
+            fondo = 255 * t / 24
+        elif t < 170:
+            fondo = 255
+        else:
+            fondo = 255 * max(0.0, 1 - (t - 170) / 30)
+        if t < 24:
+            txt = 0
+        elif t < 44:
+            txt = 255 * (t - 24) / 20
+        elif t < 150:
+            txt = 255
+        else:
+            txt = 255 * max(0.0, 1 - (t - 150) / 20)
+        tapa = self._ti_tapa
+        tapa.fill((0, 0, 0, int(fondo)))
+        if txt > 0:
+            self._pintar_cap(tapa, f"CAPÍTULO {c['sel'] + 1}", CAPITULOS[c["sel"]]["titulo"], txt)
+        screen.blit(pygame.transform.scale(tapa, (SCREEN_W, SCREEN_H)), (0, 0))
 
     def _dibujar_titulo(self, s):
         f, t = self._ti_fondo, self._ti_t
@@ -3497,12 +3602,8 @@ class Game:
             ayu = ui_texto("E SIGUIENTE · ESC SALTAR", UI_GRIS)
             s.blit(ayu, (W - ayu.get_width() - 5, H - 11))
         else:
-            s.fill((8, 10, 22))
-            a = _texto_grande(CAPITULO1_TARJETA[0], 3, UI_ORO, claro=(255, 226, 120))
-            s.blit(a, ((W - a.get_width()) // 2, 78))
-            b = ui_texto(CAPITULO1_TARJETA[1], UI_CREMA)
-            b = pygame.transform.scale(b, (b.get_width() * 2, b.get_height() * 2))
-            s.blit(b, ((W - b.get_width()) // 2, 118))
+            s.fill((0, 0, 0))
+            self._pintar_cap(s, CAPITULO1_TARJETA[0], CAPITULO1_TARJETA[1])
         al = 0
         if c["estado"] == "in":
             al = 255 * (1 - c["e"] / 16)
@@ -3695,6 +3796,47 @@ BTN_Y = (142, 163)                       # arriba de cada botón (en píxeles in
 CINE_ESCENAS = ["admision", "consultorio", "farmacia", "admin", "direccion", "reuniones"]
 CAPITULO1_TARJETA = ("CAPÍTULO 1", "EL CENTRO DE SALUD DE PAPEL")
 
+# Diagramas que se abren desde el juego: guarda los archivos en la carpeta "diagramas" (junto a main.py).
+# El nombre del archivo debe EMPEZAR con la clave (da igual mayúsculas, espacios, _ o la extensión).
+DIAGRAMAS = {
+    "bpmn": ("EL DIAGRAMA BPMN DE LA RECTIFICACIÓN DE UN REGISTRO CLÍNICO", "BPMN"),
+    "casosdeuso": ("EL DIAGRAMA DE CASOS DE USO", "CASOS DE USO"),
+    "clases": ("EL DIAGRAMA DE CLASES", "CLASES"),
+}
+
+
+def buscar_diagrama(clave):
+    """Devuelve la ruta del archivo del diagrama o None si no está en la carpeta diagramas."""
+    carpetas = []
+    if getattr(sys, "frozen", False):
+        carpetas.append(os.path.join(os.path.dirname(sys.executable), "diagramas"))
+    carpetas.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "diagramas"))
+    carpetas.append(res("diagramas"))
+    for c in carpetas:
+        if not os.path.isdir(c):
+            continue
+        for f in sorted(os.listdir(c)):
+            nombre, ext = os.path.splitext(f)
+            if ext.lower() in (".txt", ".md", ""):
+                continue
+            if re.sub(r"[^a-z0-9]", "", nombre.lower()).startswith(clave):
+                return os.path.join(c, f)
+    return None
+
+
+def abrir_archivo(ruta):
+    """Abre el archivo con el programa que tenga tu computadora para ese tipo. True si pudo."""
+    try:
+        if sys.platform.startswith("win"):
+            os.startfile(ruta)
+        elif sys.platform == "darwin":
+            subprocess.Popen(["open", ruta])
+        else:
+            subprocess.Popen(["xdg-open", ruta])
+        return True
+    except Exception:
+        return False
+
 
 def _lerp_c(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
@@ -3702,7 +3844,9 @@ def _lerp_c(a, b, t):
 
 def _texto_grande(txt, esc, color, claro=None, borde=UI_LINEA):
     """Texto pixel art grande, con contorno oscuro, sombra abajo y brillo arriba."""
-    base = ui_texto(txt, color, sombra=None).subsurface((0, 2, ui_ancho(txt) + 2, 7)).copy()
+    tilde = any(ch in ACENTOS for ch in _limpiar(txt))          # las tildes ocupan las 2 filas de arriba
+    y0, alto = (0, 9) if tilde else (2, 7)
+    base = ui_texto(txt, color, sombra=None).subsurface((0, y0, ui_ancho(txt) + 2, alto)).copy()
     w, h = base.get_width() * esc, base.get_height() * esc
     big = pygame.transform.scale(base, (w, h))
     sil = pygame.mask.from_surface(big).to_surface(setcolor=tuple(borde) + (255,), unsetcolor=(0, 0, 0, 0))
@@ -3714,8 +3858,8 @@ def _texto_grande(txt, esc, color, claro=None, borde=UI_LINEA):
     out.blit(sil, (ox, oy + esc * 2))
     out.blit(big, (ox, oy))
     if claro:
-        luz = pygame.transform.scale(ui_texto(txt, claro, sombra=None).subsurface((0, 2, ui_ancho(txt) + 2, 7)).copy(), (w, h))
-        out.blit(luz, (ox, oy), area=(0, 0, w, esc * 3))
+        luz = pygame.transform.scale(ui_texto(txt, claro, sombra=None).subsurface((0, y0, ui_ancho(txt) + 2, alto)).copy(), (w, h))
+        out.blit(luz, (ox, oy), area=(0, 0, w, esc * (3 + (2 if tilde else 0))))
     return out
 
 
