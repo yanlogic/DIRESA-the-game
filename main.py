@@ -1214,6 +1214,7 @@ class Game:
 
             # --- hospital nuevo ---
         self.plano = pygame.image.load(res(PLANO_IMG)).convert_alpha()
+        _puerta_reuniones(self.plano)
         self.colis = pygame.image.load(res(PLANO_COL)).convert()
         self.salas = {k: pygame.image.load(res(f"assets/sala_{k}.png")).convert() for k in SALAS}
         self.map_player = load_map_sprites()
@@ -3631,7 +3632,7 @@ class Game:
             if not hasattr(self, "_voz"):
                 self._voz = Voces()
             self._voz.activo = not self._voz.activo
-            self.show_banner("Sonido: " + ("ACTIVADO" if self._voz.activo else "SILENCIADO"))
+            self.show_banner("Sonido y música: " + ("ACTIVADOS" if self._voz.activo else "SILENCIADOS"))
             return None
         if key == pygame.K_h and self.fase == "juego" and self.modal is None:   # tarjeta de controles
             self.controles = True
@@ -3725,12 +3726,46 @@ class Game:
         self.menu = None
         self.fase = "tarjeta_cap"
 
+    def _pista_actual(self):
+        """Qué música toca según dónde estamos."""
+        f = getattr(self, "fase", "juego")
+        if f == "titulo":
+            return "titulo"
+        if f == "cine":
+            c = self.cine
+            if c.get("final"):
+                return "final" if c["i"] < len(CINE_FINAL) else "titulo"
+            return "intro" if c["i"] < len(CINE_ESCENAS) else "tarjeta"
+        if f == "tarjeta_cap":
+            return "tarjeta"
+        if self.scene == "ext":
+            return "calle"
+        if self.scene == "map":
+            return "amb_pasillo"                                  # dentro: sin música, solo ambiente
+        return "amb_" + self.sala if self.sala in AMBIENTES else "amb_pasillo"
+
+    def _musica_tick(self):
+        if not hasattr(self, "_musica"):
+            if not hasattr(self, "_voz"):
+                self._voz = Voces()
+            self._musica = Musica(self._voz)
+        m = getattr(self, "modal", None)
+        callar = getattr(self, "fase", "juego") == "juego" and m is not None   # diálogos y conflictos: silencio
+        if m is not None and m["paginas"][m["i"]]["tipo"] == "apagon" and not m.get("_apagon_sono"):
+            m["_apagon_sono"] = True
+            self._musica.efecto("apagon")
+        if getattr(self, "logro_t", 0) > 0 and getattr(self, "_logro_sono", None) != self.logro_txt:
+            self._logro_sono = self.logro_txt
+            self._musica.efecto("logro")
+        self._musica.tick(self._pista_actual(), callar)
+
     def _empezar_juego(self):
         self.fase = "juego"
         self._fade_in = 50
 
     # --- actualizar -----------------------------------------------------------
     def update(self, left, right, up=False, down=False, run=False):
+        self._musica_tick()
         if self.fase == "juego":
             if getattr(self, "_fade_in", 0) > 0:
                 self._fade_in -= 1
@@ -3911,8 +3946,7 @@ class Game:
         lista = self._cine_lista()
         if i < len(lista):
             getattr(self, "_cine_" + lista[i])(s, t)
-            if c.get("final"):
-                self._cine_leyenda(s, CINE_FINAL_TXT[i])
+            self._cine_leyenda(s, CINE_FINAL_TXT[i] if c.get("final") else CINE_INTRO_TXT[i])
             # puntitos de avance + ayuda
             n = len(lista)
             x0 = 6
@@ -3970,10 +4004,6 @@ class Game:
         self._c_npc(s, "pacientes2", 330, -(((t + 14) // 28) % 2), flip=False)
         if (t // 100) % 2:
             _c_globo(s, 288 + SPRITE // 2, GROUND - FEET - 17, "", puntos=(t // 15) % 4)
-        # cartelito de lugar
-        _lug = ui_texto("DIRESA LA LIBERTAD · CENTRO DE SALUD", UI_CREMA)
-        ui_marco(s, 6, 6, _lug.get_width() + 22, 19, borde=UI_ORO)
-        s.blit(_lug, (6 + 11, 6 + (19 - _lug.get_height()) // 2 + 1))
 
     # Escena 2: Consultorio. Dos historiales del mismo paciente que no coinciden.
     def _cine_consultorio(self, s, t):
@@ -4532,7 +4562,7 @@ class Game:
         """Tarjeta cuadrada con todos los controles (H). Se cierra con cualquier tecla."""
         ui_rect(s, (0, 0, 0, 150), 0, 0, W, H)
         filas = [(("W", "A", "S", "D"), "MOVERTE"), (("SHIFT",), "CORRER"), (("E",), "HABLAR / ENTRAR"),
-                 (("TAB",), "MOSTRAR LA MISIÓN"), (("M",), "SONIDO"), (("F11",), "PANTALLA COMPLETA"),
+                 (("TAB",), "MOSTRAR LA MISIÓN"), (("M",), "SONIDO Y MÚSICA"), (("F11",), "PANTALLA COMPLETA"),
                  (("ESC",), "SALIR DEL JUEGO")]
         tx_off = max(sum(ui_tecla_ancho(k) + 2 for k in teclas) for teclas, _ in filas) + 18
         cw = tx_off + max(ui_ancho(t) for _, t in filas) + 14
@@ -4631,6 +4661,15 @@ CINE_FINAL_TXT = [
     ("TRIAJE", "Autoguardado cifrado: no se pierde nada en un apagón"),
     ("SISTEMAS TI", "Todo en una sola base de datos, sin Excel sueltos"),
     ("REUNIONES", "Información trazable: NTS 139 y Ley 29733"),
+]
+# Cinemática de inicio: el letrerito resume el problema de cada escena (como en la final, pero al revés).
+CINE_INTRO_TXT = [
+    ("ADMISIÓN", "Todo se anota a mano y los pacientes esperan"),
+    ("CONSULTORIO", "Dos historias del mismo paciente que no coinciden"),
+    ("FARMACIA", "El cuaderno dice 12, pero en el estante hay 9"),
+    ("SISTEMAS TI", "Los datos están repartidos en muchos Excel"),
+    ("ADMINISTRACIÓN", "Sin datos juntos, el informe no llega a tiempo"),
+    ("REUNIONES", "El MINSA no puede comprobar que se cumpla la norma"),
 ]
 CAPITULO1_TARJETA = ("CAPÍTULO 1", "EL CENTRO DE SALUD DE PAPEL")
 
@@ -4961,7 +5000,7 @@ class Voces:
             else:
                 v = (2 - 2 * duty if fase < duty else -2 * duty) / max(2 - 2 * duty, 2 * duty)   # sin "clic" de offset
             env = min(1.0, i / 90) * (1 - i / n) ** 0.7              # sube rápido y se apaga
-            dato = int(v * env * 5200)
+            dato = int(v * env * 3700)
             for _ in range(self.canales):                       # mono o estéreo, según el mezclador
                 datos.append(dato)
         return pygame.mixer.Sound(buffer=datos.tobytes())
@@ -4983,6 +5022,459 @@ class Voces:
             random.choice(self._sonidos(quien)).play()
         except Exception:
             self.ok = False
+
+
+# ----------------------------------------------------------------------------
+# MÚSICA 8 BITS: se genera con código (sin archivos), suave y en bucle.
+# Cada pista: tempo, acordes (uno por compás de 8 corcheas), melodía y patrones de arpegio y bajo.
+# Melodía: "C5" = nota · "-" = la nota sigue sonando · "." = silencio · "|" solo separa compases.
+# Arpegio: 0 1 2 3 = notas del acorde (raíz, 3ra, 5ta, octava). Bajo: 0 = raíz, 4 = quinta, 8 = octava.
+# ----------------------------------------------------------------------------
+MUSICA_VOLUMEN = 0.45          # volumen general de la música (0 a 1): bajito, para la exposición
+MUSICA = {
+    "titulo": dict(bpm=104,
+        acordes="C C Am Am F F G G C C Am Am F G C C",
+        mel="E5 - - G5 - - E5 D5 | C5 - - - D5 - E5 - | A4 - - C5 - - E5 D5 | C5 - - - B4 - A4 - |"
+            "F4 - - A4 - - C5 - | D5 - C5 - A4 - C5 - | B4 - - D5 - - G5 - | F5 - E5 - D5 - - - |"
+            "E5 - - G5 - - C6 - | B5 - A5 - G5 - E5 - | A5 - - G5 - - E5 - | C5 - D5 - E5 - - - |"
+            "F5 - - E5 - - D5 - | D5 - - E5 - - F5 - | E5 - - - C5 - - - | . . . . G4 - - -",
+        arpe="0 1 2 3 2 1 2 1", bajo="0 . 0 . 4 . 0 ."),
+    "intro": dict(bpm=76,
+        acordes="Am Am F F C C E E Am Am Dm Dm F F E E",
+        mel=". . . . A4 - - - | C5 - - - B4 - A4 - | A4 - - - - - - - | . . . . G4 - A4 - |"
+            "G4 - - - E4 - - - | G4 - - - C5 - - - | B4 - - - - - - - | G#4 - - - - - - - |"
+            ". . . . A4 - C5 - | E5 - - - D5 - C5 - | D5 - - - - - F5 - | E5 - - - D5 - - - |"
+            "C5 - - - A4 - - - | F4 - - - A4 - C5 - | B4 - - - - - - - | G#4 - - - - - - -",
+        arpe="0 . 2 . 3 . 2 .", bajo="0 - - - - - - -", vol_mel=0.8),
+    "tarjeta": dict(bpm=70, acordes="C F Am G", mel="", arpe="0 . 1 . 2 . 3 .", bajo="0 - - - - - - -"),
+    "calle": dict(bpm=112,
+        acordes="G G D D Em Em C D G G D D C D G G",
+        mel="B4 . D5 . G5 - D5 . | E5 - D5 - B4 - - . | A4 . D5 . F#5 - E5 . | D5 - - - A4 - - . |"
+            "G4 . B4 . E5 - D5 . | B4 - G4 - E4 - - . | C5 - E5 - G5 - E5 - | F#5 - - - A5 - - - |"
+            "B5 - A5 - G5 - D5 - | E5 - D5 - B4 - G4 - | A4 - B4 - D5 - F#5 - | E5 - - - D5 - - - |"
+            "E5 - G5 - E5 - C5 - | D5 - F#5 - A5 - F#5 - | G5 - - - D5 - B4 - | G4 - - - . . . .",
+        arpe="0 . 2 . 3 . 2 .", bajo="0 . 4 . 0 . 4 ."),
+    "final": dict(bpm=90,
+        acordes="F F G G Em Em Am Am F F G G C C C C",
+        mel="A4 - C5 - F5 - - - | E5 - - - C5 - - - | B4 - D5 - G5 - - - | F5 - - - D5 - - - |"
+            "E5 - - - G5 - - - | B5 - - - G5 - - - | A5 - - - E5 - - - | C5 - - - - - - - |"
+            "A4 - C5 - F5 - A5 - | G5 - - - F5 - - - | G5 - - - B4 - D5 - | F5 - - - E5 - D5 - |"
+            "E5 - - - - - G5 - | E5 - - - D5 - - - | C5 - - - - - - - | . . . . . . . .",
+        arpe="0 1 2 3 2 1 2 1", bajo="0 - 4 - 0 - 4 -"),
+}
+_NOTA_PC = {"C": 0, "C#": 1, "D": 2, "D#": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "B": 11}
+_ACORDE_INT = {"": (0, 4, 7, 12), "m": (0, 3, 7, 12), "maj7": (0, 4, 7, 11), "m7": (0, 3, 7, 10), "7": (0, 4, 7, 10)}
+
+
+def _hz(midi):
+    return 440.0 * 2 ** ((midi - 69) / 12)
+
+
+def _midi(nombre):
+    return 12 * (int(nombre[-1]) + 1) + _NOTA_PC[nombre[:-1]]
+
+
+def _acorde(nombre):
+    raiz = nombre[:2] if len(nombre) > 1 and nombre[1] == "#" else nombre[0]
+    return _NOTA_PC[raiz], _ACORDE_INT[nombre[len(raiz):]]
+
+
+def _eventos(tokens):
+    """Fichas -> lista [hz (0 = silencio), pasos]."""
+    ev = []
+    for tk in tokens:
+        if tk == "-" and ev:
+            ev[-1][1] += 1
+        elif tk in (".", "-"):
+            ev.append([0, 1])
+        else:
+            ev.append([_hz(tk), 1])
+    return ev
+
+
+def _env(tipo, pos, n, rate):
+    """Volumen (0 a 1) de una nota según cuánto lleva sonando: sube rápido y se apaga suave."""
+    if tipo == "pad":
+        a = min(1.0, pos / (rate * 0.05))
+    elif tipo == "silaba":                                    # murmullo: sube y baja como una sílaba
+        a = math.sin(math.pi * pos / max(1, n))
+    else:
+        a = min(1.0, pos / (rate * 0.004))
+        a *= 0.45 + 0.55 * math.exp(-pos / (rate * (0.18 if tipo == "pluck" else 0.06)))
+    fin = rate * 0.03                                         # se apaga al final para que no "chasquee"
+    if n - pos < fin:
+        a *= max(0.0, (n - pos) / fin)
+    return round(a * 15) / 15                                 # 16 niveles de volumen, como en las consolas
+
+
+def _tramos(ev, paso, onda, amp, env, rate):
+    """Convierte las notas en tramos (valor, largo). Una onda cuadrada es una serie de tramos constantes."""
+    out = []
+    for hz, pasos in ev:
+        n = pasos * paso
+        if not hz:
+            out.append((0, n))
+            continue
+        per = rate / hz
+        pos, borde, k = 0, 0.0, 0
+        if onda == "tri":                                     # triángulo en escalera de 32 escalones (bajo)
+            esc = per / 32
+            while pos < n:
+                borde += esc
+                fin = min(n, int(borde + 0.5))
+                if fin > pos:
+                    j = k % 32
+                    v = (j if j < 16 else 31 - j) / 7.5 - 1.0
+                    out.append((int(v * amp * _env(env, pos, n, rate)), fin - pos))
+                    pos = fin
+                k += 1
+        else:
+            duty = onda
+            alto, bajo = (2 - 2 * duty), -2 * duty
+            norma = max(alto, -bajo)
+            while pos < n:
+                borde += per * (duty if k % 2 == 0 else 1 - duty)
+                fin = min(n, int(borde + 0.5))
+                if fin > pos:
+                    v = (alto if k % 2 == 0 else bajo) / norma
+                    out.append((int(v * amp * _env(env, pos, n, rate)), fin - pos))
+                    pos = fin
+                k += 1
+    return out
+
+
+def _mezclar(listas):
+    """Suma varias voces (listas de tramos) sin recorrer muestra por muestra."""
+    listas = [l for l in listas if l]
+    idx = [0] * len(listas)
+    resto = [l[0][1] for l in listas]
+    out = []
+    while True:
+        m = min(resto)
+        out.append((sum(listas[i][idx[i]][0] for i in range(len(listas))), m))
+        for i in range(len(listas)):
+            resto[i] -= m
+            if resto[i] == 0:
+                idx[i] += 1
+                if idx[i] >= len(listas[i]):
+                    return out
+                resto[i] = listas[i][idx[i]][1]
+
+
+def _a_bytes(tramos, canales):
+    import struct
+    cache, partes = {}, []
+    for v, n in tramos:
+        v = max(-32000, min(32000, v))
+        b = cache.get(v)
+        if b is None:
+            b = cache[v] = struct.pack("<h", v) * canales
+        partes.append(b * n)
+    return b"".join(partes)
+
+
+def _render_pista(cfg, rate, canales):
+    paso = int(rate * 60 / cfg["bpm"] / 2)                     # una corchea
+    acordes = cfg["acordes"].split()
+    compases = len(acordes)
+    mel = [t for t in cfg["mel"].replace("|", " ").split()]
+    mel = (mel + ["."] * (compases * 8))[:compases * 8]
+    arpe, bajo = cfg["arpe"].split(), cfg["bajo"].split()
+    t_arpe, t_bajo = [], []
+    for a in acordes:
+        pc, inter = _acorde(a)
+        r_arpe = 55 + (pc - 7) % 12                           # arpegio entre G3 y F#4
+        r_bajo = 40 + (pc - 4) % 12                           # bajo entre E2 y D#3
+        for tk in arpe:
+            t_arpe.append(tk if tk in ".-" else r_arpe + inter[int(tk)])
+        for tk in bajo:
+            t_bajo.append(tk if tk in ".-" else r_bajo + {"0": 0, "4": 7, "8": 12}[tk])
+    voces = [_tramos(_eventos(t_bajo), paso, "tri", 3600, "pad", rate),          # más bajo (graves)
+             _tramos(_eventos(t_arpe), paso, "tri", 1300, "corto", rate)]        # arpegio suave, sin chillar
+    if any(t not in ".-" for t in mel):
+        voces.append(_tramos(_eventos([_midi(t) if t not in ".-" else t for t in mel]), paso, 0.5,
+                             int(1250 * cfg.get("vol_mel", 1.0)), "pluck", rate))   # onda cuadrada: menos aguda
+    return _a_bytes(_mezclar(voces), canales)
+
+
+def _render_efecto(nombre, rate, canales):
+    if nombre == "logro":                                     # tarirí: arpegio que sube
+        ev = [[_hz(_midi(n)), 1] for n in ("C4", "E4", "G4")] + [[_hz(_midi("C5")), 5]]
+        return _a_bytes(_tramos(ev, int(rate * 0.075), 0.5, 2000, "pluck", rate), canales)
+    if nombre == "apagon":                                    # se va la luz: un tono que cae
+        out, n, pos, k, borde = [], int(rate * 0.9), 0, 0, 0.0
+        while pos < n:
+            hz = 420 * (1 - pos / n) ** 1.6 + 45
+            borde += rate / hz / 2
+            fin = min(n, int(borde + 0.5))
+            if fin > pos:
+                a = 2600 * (1 - pos / n)
+                out.append((int(a if k % 2 == 0 else -a), fin - pos))
+                pos = fin
+            k += 1
+        return _a_bytes(out, canales)
+    return b""
+
+# ----------------------------------------------------------------------------
+# SONIDO AMBIENTE (dentro del centro de salud no hay música: suena como un hospital de verdad, bajito)
+# Cada sala tiene sus capas: murmullo de gente, teclado, monitor de signos vitales, reloj, ventilador...
+# ----------------------------------------------------------------------------
+AMBIENTE_VOLUMEN = 1.3         # volumen de los sonidos de ambiente (0 a 1)
+AMBIENTES = {
+    "pasillo":     ("murmullo", "pasos", "monitor_lejos", "zumbido"),
+    "admision":    ("murmullo", "teclado", "zumbido"),
+    "triaje":      ("monitor", "zumbido", "murmullo_lejos"),
+    "consultorio": ("reloj", "teclado_poco", "zumbido"),
+    "farmacia":    ("murmullo_lejos", "lector", "teclado_poco"),
+    "admin":       ("servidor", "teclado"),
+    "direccion":   ("reloj", "teclado_poco", "murmullo_lejos"),
+    "reuniones":   ("reloj", "aire"),
+    "espera":      ("murmullo", "murmullo_lejos", "pasos", "monitor_lejos"),
+}
+AMB_SEG = 16                   # cada ambiente es un bucle de 16 segundos
+
+
+def _ajustar(tramos, n):
+    out, pos = [], 0
+    for v, l in tramos:
+        if pos >= n:
+            break
+        l = min(l, n - pos)
+        out.append((v, l))
+        pos += l
+    if pos < n:
+        out.append((0, n - pos))
+    return out
+
+
+def _capa(n, eventos):
+    """Coloca sonidos cortos (inicio, tramos) sobre silencio."""
+    out, pos = [], 0
+    for ini, tr in sorted(eventos, key=lambda e: e[0]):
+        if ini < pos or ini >= n:
+            continue
+        if ini > pos:
+            out.append((0, ini - pos))
+            pos = ini
+        for v, l in tr:
+            l = min(l, n - pos)
+            if l <= 0:
+                break
+            out.append((v, l))
+            pos += l
+    return _ajustar(out, n)
+
+
+def _ruido(n, hz, amp, rnd, rate, decae=None):
+    """Ruido suave: puntos al azar unidos en escalera (cuanto menor hz, más grave y apagado)."""
+    out, paso, prev, pos = [], max(4, int(rate / hz)), 0.0, 0
+    sub = max(1, paso // 4)
+    while pos < n:
+        nuevo = rnd.uniform(-1, 1)
+        for k in range(4):
+            if pos >= n:
+                break
+            a = amp if decae is None else amp * math.exp(-pos / decae)
+            out.append((int((prev + (nuevo - prev) * (k + 1) / 4) * a), min(sub, n - pos)))
+            pos += sub
+        prev = nuevo
+    return out
+
+
+def _tono(hz, ms, amp, rate, env="corto"):
+    return _tramos([[hz, int(rate * ms / 1000)]], 1, "tri", amp, env, rate)
+
+
+def _amb_capa(tipo, n, rate, rnd):
+    seg = lambda s: int(s * rate)
+    if tipo in ("murmullo", "murmullo_lejos"):                # varias personas hablando a lo lejos
+        lejos = tipo == "murmullo_lejos"
+        capas = []
+        for base in ((120, 165, 210) if not lejos else (140, 190)):
+            ev, pos = [], rnd.randint(0, seg(1))
+            while pos < n:
+                if rnd.random() < 0.12:
+                    pos += seg(rnd.uniform(0.5, 1.6))       # pausa entre frases
+                    continue
+                d = rnd.uniform(0.07, 0.2)
+                ev.append((pos, _tramos([[base * rnd.uniform(0.85, 1.2), seg(d)]], 1, "tri",
+                                        420 if lejos else 650, "silaba", rate)))
+                pos += seg(d + rnd.uniform(0.02, 0.07))
+            capas.append(_capa(n, ev))
+        capas.append(_ruido(n, 260, 160 if lejos else 260, rnd, rate))
+        return capas
+    if tipo in ("teclado", "teclado_poco"):                   # alguien escribe en la computadora
+        ev, pos = [], seg(rnd.uniform(0.2, 1.5))
+        while pos < n:
+            for _ in range(rnd.randint(3, 9)):
+                ev.append((pos, _ruido(seg(0.012), 1800, 900, rnd, rate, decae=seg(0.004))))
+                pos += seg(rnd.uniform(0.07, 0.16))
+            pos += seg(rnd.uniform(0.6, 2.0) * (2.5 if tipo == "teclado_poco" else 1))
+        return [_capa(n, ev)]
+    if tipo in ("monitor", "monitor_lejos"):                  # monitor de signos vitales: bip... bip...
+        lejos = tipo == "monitor_lejos"
+        ev, pos, per = [], seg(0.3), seg(0.85)
+        while pos < n:
+            if not lejos or (pos // seg(4)) % 2 == 0:       # el lejano se oye a ratos
+                ev.append((pos, _tono(660, 70, 380 if lejos else 900, rate)))
+            pos += per
+        return [_capa(n, ev)]
+    if tipo == "pasos":                                       # pasos que van y vienen
+        ev, pos = [], seg(rnd.uniform(0.5, 2))
+        while pos < n:
+            for _ in range(rnd.randint(4, 8)):
+                ev.append((pos, _tono(75, 45, 900, rate)))
+                pos += seg(0.42)
+            pos += seg(rnd.uniform(2, 4))
+        return [_capa(n, ev)]
+    if tipo == "reloj":                                       # tic... tac...
+        ev = [(seg(k), _ruido(seg(0.006), 1500, 700 if k % 2 else 500, rnd, rate, decae=seg(0.002)))
+              for k in range(AMB_SEG)]
+        return [_capa(n, ev)]
+    if tipo == "lector":                                      # el lector de códigos de farmacia, de vez en cuando
+        ev, pos = [], seg(rnd.uniform(1, 3))
+        while pos < n:
+            ev.append((pos, _tono(587, 90, 450, rate)))
+            pos += seg(rnd.uniform(3, 6))
+        return [_capa(n, ev)]
+    if tipo == "servidor":                                    # zumbido grave de los servidores y su ventilador
+        return [_ajustar(_tramos([[55, n]], 1, "tri", 420, "pad", rate), n), _ruido(n, 700, 170, rnd, rate)]
+    if tipo == "aire":                                        # aire acondicionado
+        return [_ruido(n, 220, 260, rnd, rate)]
+    if tipo == "zumbido":                                     # luces y equipos, casi no se nota
+        return [_ajustar(_tramos([[60, n]], 1, "tri", 160, "pad", rate), n)]
+    return []
+
+
+def _render_ambiente(nombre, rate, canales):
+    import random as _r
+    rnd = _r.Random(sum(ord(c) for c in nombre) * 7919)
+    n = int(AMB_SEG * rate)
+    capas = []
+    for tipo in AMBIENTES[nombre]:
+        capas += _amb_capa(tipo, n, rate, rnd)
+    capas = [_ajustar(c, n) for c in capas]
+    # para que el bucle no "salte": todo entra y sale suave en los bordes
+    tr = _mezclar(capas)
+    out, pos, borde = [], 0, int(rate * 0.25)
+    for v, l in tr:
+        f = min(1.0, pos / borde, (n - pos) / borde)
+        out.append((int(v * f), l))
+        pos += l
+    return _a_bytes(out, canales)
+
+
+
+class Musica:
+    """Música de fondo: cambia según la escena con un fundido suave y se calla en diálogos."""
+    ORDEN = ["titulo", "intro", "tarjeta", "calle"] + ["amb_" + k for k in AMBIENTES] + ["final"]
+
+    def __init__(self, voz):
+        self.voz = voz
+        self.ok = bool(getattr(voz, "ok", False))
+        self.datos, self.sonidos, self.efectos_datos, self.efectos = {}, {}, {}, {}
+        self.actual, self.ch, self.nivel, self.meta = None, [None, None], [0.0, 0.0], [0.0, 0.0]
+        self.cual = 0
+        self.duck = 1.0
+        self.vol_pista = [MUSICA_VOLUMEN, MUSICA_VOLUMEN]
+        if not self.ok:
+            return
+        try:
+            pygame.mixer.set_num_channels(16)
+            pygame.mixer.set_reserved(3)                      # 0 y 1: música (para fundir) · 2: efectos
+            self.canal = [pygame.mixer.Channel(0), pygame.mixer.Channel(1)]
+            self.canal_fx = pygame.mixer.Channel(2)
+            ini = pygame.mixer.get_init()
+            self.rate, self.canales = ini[0], ini[2]
+            import threading
+            threading.Thread(target=self._generar, daemon=True).start()
+        except Exception:
+            self.ok = False
+
+    def _generar(self):
+        for nombre in ("logro", "apagon"):
+            try:
+                self.efectos_datos[nombre] = _render_efecto(nombre, self.rate, self.canales)
+            except Exception:
+                pass
+        for nombre in self.ORDEN:
+            try:
+                if nombre.startswith("amb_"):
+                    self.datos[nombre] = _render_ambiente(nombre[4:], self.rate, self.canales)
+                else:
+                    self.datos[nombre] = _render_pista(MUSICA[nombre], self.rate, self.canales)
+            except Exception:
+                pass
+
+    def _sonido(self, nombre):
+        if nombre not in self.sonidos and nombre in self.datos:
+            self.sonidos[nombre] = pygame.mixer.Sound(buffer=self.datos.pop(nombre))   # no guardar dos copias
+        return self.sonidos.get(nombre)
+
+    def efecto(self, nombre):
+        if not (self.ok and self.voz.activo):
+            return
+        try:
+            if nombre not in self.efectos and nombre in self.efectos_datos:
+                self.efectos[nombre] = pygame.mixer.Sound(buffer=self.efectos_datos[nombre])
+            s = self.efectos.get(nombre)
+            if s:
+                self.canal_fx.set_volume(0.55)
+                self.canal_fx.play(s)
+        except Exception:
+            pass
+
+    def tick(self, pista, callar):
+        if not self.ok:
+            return
+        try:
+            if pista != self.actual:
+                s = self._sonido(pista) if pista else None
+                if pista is None or s is not None:            # si aún no está lista, espera
+                    self.meta[self.cual] = 0.0                # la que suena se va apagando
+                    self.actual = pista
+                    if s is not None:
+                        self.cual = 1 - self.cual
+                        self.canal[self.cual].stop()
+                        self.canal[self.cual].set_volume(0.0)
+                        self.canal[self.cual].play(s, loops=-1)
+                        self.nivel[self.cual], self.meta[self.cual] = 0.0, 1.0
+                        self.vol_pista[self.cual] = AMBIENTE_VOLUMEN if pista.startswith("amb_") else MUSICA_VOLUMEN
+            self.duck += ((0.0 if callar else 1.0) - self.duck) * 0.06
+            mudo = 1.0 if self.voz.activo else 0.0
+            for i in (0, 1):
+                d = self.meta[i] - self.nivel[i]
+                self.nivel[i] += max(-0.012, min(0.012, d))      # ~1.4 s de fundido
+                if self.nivel[i] <= 0.0 and self.meta[i] == 0.0:
+                    self.canal[i].stop()
+                self.canal[i].set_volume(self.nivel[i] * self.duck * mudo * self.vol_pista[i])
+        except Exception:
+            self.ok = False
+
+
+
+def _puerta_reuniones(plano):
+    """La puerta de Reuniones venía como un vidrio (parecía ventana): se redibuja con el mismo estilo
+    que las demás puertas del plano (marco blanco, hoja de color con ventanita y perilla, y tapete)."""
+    if plano.get_width() < 70 or plano.get_height() < 205:
+        return
+    r = plano.fill
+    linea, blanco = (62, 70, 88), (238, 240, 244)
+    for x in range(32, 63):                                     # 1) borrar el vidrio: piso, pared y piso de la sala
+        piso = plano.get_at((x, 186))
+        r(piso, (x, 189, 1, 2))
+        r((192, 199, 208) if tuple(piso)[:3] == (214, 222, 232) else (187, 194, 203), (x, 191, 1, 1))
+        r(linea, (x, 192, 1, 1)); r(blanco, (x, 193, 1, 4)); r(linea, (x, 197, 1, 1))
+        r((196, 172, 146), (x, 198, 1, 1)); r((248, 236, 220), (x, 199, 1, 2))
+    for px in (32, 61):                                         # 2) postes del marco
+        r(linea, (px, 191, 4, 8)); r(blanco, (px + 1, 192, 2, 6))
+    borde, luz, hoja = (122, 72, 40), (246, 196, 150), (222, 142, 86)
+    r(borde, (36, 192, 25, 6))                                  # 3) hoja de la puerta (tono de la sala)
+    r(luz, (37, 193, 23, 1)); r(hoja, (37, 194, 23, 3))
+    r((196, 230, 244), (40, 194, 8, 2))                         # ventanita
+    r((250, 230, 120), (55, 195, 1, 1))                         # perilla
+    r((150, 100, 64), (35, 177, 27, 11))                        # 4) tapete en el pasillo
+    r((240, 192, 142), (36, 178, 25, 9)); r((226, 170, 118), (39, 180, 19, 5))
 
 
 def main():
