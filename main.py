@@ -56,7 +56,7 @@ ZONES = [
 NPCS = [
     dict(id="arian",     x=2760, name="Sr. Arian Juan de Dios", role="Administración",
          poder="Alto", interes="Alto", cuadrante="Gestionar de cerca", actividad="telefono",
-         need="Decidir qué 2 de los 5 módulos se priorizan",
+         need="Tener la información a la mano para elegir 2 de los 5 módulos",
          body=(122, 34, 48), accent=(75, 22, 32), kind="suit"),
     dict(id="leonidas",  x=1560, name="Ing. Leonidas Paredes", role="Equipo de TI",
          poder="Alto", interes="Alto", cuadrante="Gestionar de cerca", actividad="teclea",
@@ -86,7 +86,7 @@ NPCS = [
          poder="Bajo", interes="Alto", cuadrante="Mantener informado", actividad="acomoda",
          need="Dispensar las recetas sin el cuaderno",
          body=(79, 143, 63), accent=(47, 92, 38), kind="apron", conflict="c2",
-         says="¡Cada salida debe descontarse del stock!"),
+         says="¡Cada medicina que sale hay que apuntarla!"),
     dict(id="yasuri",    x=2200, name="Yasuri Yamileth", role="Pacientes (representante)",
          poder="Bajo", interes="Bajo", cuadrante="Monitorear", actividad="baila",
          need="Ser atendida sin demoras",
@@ -742,10 +742,54 @@ _LETRAS = {
     "¿": "00100,00000,00100,01000,10000,10001,01110", "/": "00001,00001,00010,00100,01000,10000,10000",
     "-": "000,000,000,111,000,000,000", "+": "000,000,010,111,010,000,000", "(": "01,10,10,10,10,10,01",
     ")": "10,01,01,01,01,01,10", "·": "0,0,0,1,0,0,0", "'": "1,1,0,0,0,0,0", "%": "10001,10010,00010,00100,01000,01001,10001",
+    "<": "0001,0010,0100,1000,0100,0010,0001", ">": "1000,0100,0010,0001,0010,0100,1000",
 }
 LETRAS = {k: v.split(",") for k, v in _LETRAS.items()}
+# Letra chica de 4x6 (algunas de 3 o 5 de ancho): para toda la interfaz, menos diálogos y conflictos.
+_LETRAS_CHICA = {
+    "A": "0110,1001,1001,1111,1001,1001", "B": "1110,1001,1110,1001,1001,1110",
+    "C": "0111,1000,1000,1000,1000,0111", "D": "1110,1001,1001,1001,1001,1110",
+    "E": "1111,1000,1110,1000,1000,1111", "F": "1111,1000,1110,1000,1000,1000",
+    "G": "0111,1000,1011,1001,1001,0111", "H": "1001,1001,1111,1001,1001,1001",
+    "I": "111,010,010,010,010,111", "J": "0011,0001,0001,0001,1001,0110",
+    "K": "1001,1010,1100,1010,1001,1001", "L": "1000,1000,1000,1000,1000,1111",
+    "M": "10001,11011,10101,10001,10001,10001", "N": "1001,1101,1011,1001,1001,1001",
+    "O": "0110,1001,1001,1001,1001,0110", "P": "1110,1001,1001,1110,1000,1000",
+    "Q": "0110,1001,1001,1001,1010,0101", "R": "1110,1001,1001,1110,1010,1001",
+    "S": "0111,1000,0110,0001,0001,1110", "T": "11111,00100,00100,00100,00100,00100",
+    "U": "1001,1001,1001,1001,1001,0110", "V": "10001,10001,10001,01010,01010,00100",
+    "W": "10001,10001,10001,10101,11011,10001", "X": "10001,10001,01010,00100,01010,10001",
+    "Y": "10001,10001,01010,00100,00100,00100", "Z": "1111,0001,0010,0100,1000,1111",
+    "0": "0110,1001,1011,1101,1001,0110", "1": "010,110,010,010,010,111",
+    "2": "0110,1001,0010,0100,1000,1111", "3": "1110,0001,0110,0001,0001,1110",
+    "4": "1001,1001,1111,0001,0001,0001", "5": "1111,1000,1110,0001,0001,1110",
+    "6": "0110,1000,1110,1001,1001,0110", "7": "1111,0001,0010,0100,0100,0100",
+    "8": "0110,1001,0110,1001,1001,0110", "9": "0110,1001,1001,0111,0001,0110",
+    " ": "00,00,00,00,00,00", ".": "0,0,0,0,0,1", ",": "0,0,0,0,1,1", ":": "0,1,0,0,1,0",
+    "!": "1,1,1,1,0,1", "¡": "1,0,1,1,1,1", "?": "0110,1001,0010,0100,0000,0100",
+    "¿": "0010,0000,0010,0100,1001,0110", "/": "0001,0001,0010,0100,1000,1000",
+    "-": "000,000,111,000,000,000", "+": "000,010,111,010,000,000", "(": "01,10,10,10,10,01",
+    ")": "10,01,01,01,01,10", "·": "0,0,1,0,0,0", "'": "1,1,0,0,0,0", "%": "1001,1010,0010,0100,0101,1001",
+    "<": "001,010,100,010,001,000", ">": "100,010,001,010,100,000",
+}
+LETRAS_CHICA = {k: v.split(",") for k, v in _LETRAS_CHICA.items()}
 # letras con tilde: (letra base, tilde). La tilde se dibuja en 2 filas encima de la letra.
 _TILDES = {"agudo": ("00010", "00100"), "tilde": ("01001", "10010"), "diere": ("01010", "00000")}
+_TILDES_CHICA = {"agudo": ("0010", "0100"), "tilde": ("0101", "1010"), "diere": ("1001", "0000")}
+_FUENTE = [False]          # True = letra grande (solo diálogos y conflictos); False = letra chica
+
+
+class fuente_grande:
+    """with fuente_grande(): ... -> lo que se escriba adentro usa la letra grande."""
+    def __enter__(self):
+        _FUENTE.append(True)
+
+    def __exit__(self, *a):
+        _FUENTE.pop()
+
+
+def _glifos():
+    return (LETRAS, _TILDES) if _FUENTE[-1] else (LETRAS_CHICA, _TILDES_CHICA)
 ACENTOS = {"Á": ("A", "agudo"), "É": ("E", "agudo"), "Í": ("I", "agudo"), "Ó": ("O", "agudo"),
            "Ú": ("U", "agudo"), "Ñ": ("N", "tilde"), "Ü": ("U", "diere")}
 _CAMBIOS = {"—": "-", "–": "-", "…": "...", "“": "'", "”": "'", '"': "'", "«": "'", "»": "'", "’": "'",
@@ -762,19 +806,22 @@ def _limpiar(texto):
 def ui_ancho(texto):
     """Ancho en píxeles de un texto con la letra pixel art."""
     total = 0
+    letras = _glifos()[0]
     for ch in _limpiar(texto):
         base = ACENTOS[ch][0] if ch in ACENTOS else ch
-        total += len(LETRAS.get(base, LETRAS["?"])[0]) + 1
+        total += len(letras.get(base, letras["?"])[0]) + 1
     return max(0, total - 1)
 
 
 def ui_texto(texto, color, sombra=UI_LINEA):
     """Devuelve una imagen del texto (con sombra de 1 píxel). Se guarda en memoria para no redibujar."""
-    clave = (texto, color, sombra)
+    grande = _FUENTE[-1]
+    clave = (texto, color, sombra, grande)
     if clave in _CACHE_TEXTO:
         return _CACHE_TEXTO[clave]
     texto = _limpiar(texto)
-    s = pygame.Surface((ui_ancho(texto) + 2, 10), pygame.SRCALPHA)
+    LETRAS, _TILDES = _glifos()
+    s = pygame.Surface((ui_ancho(texto) + 2, 10 if grande else 9), pygame.SRCALPHA)
     for col, dx, dy in ((sombra, 1, 1), (color, 0, 0)):
         if col is None:
             continue
@@ -825,11 +872,18 @@ def ui_rect(s, color, x, y, w, h):
         pygame.draw.rect(s, color, (int(x), int(y), int(w), int(h)))
 
 
+_SOMBRAS = {}
+
+
 def ui_marco(s, x, y, w, h, borde=UI_ORO, fondo=UI_FONDO, brillo=True, sombra=True):
     """Marco pixel art: sombra, contorno oscuro con esquinas cortadas, borde de color y fondo con brillo."""
     x, y, w, h = int(x), int(y), int(w), int(h)
     if sombra:
-        ui_rect(s, (0, 0, 0, 80), x + 1, y + 2, w, h)
+        sh = _SOMBRAS.get((w, h))
+        if sh is None:
+            sh = _SOMBRAS[(w, h)] = pygame.Surface((w, h), pygame.SRCALPHA)
+            sh.fill((0, 0, 0, 80))
+        s.blit(sh, (x + 1, y + 2))                              # se mezcla con lo que haya debajo
     ui_rect(s, UI_LINEA, x + 1, y, w - 2, h)               # contorno (esquinas cortadas)
     ui_rect(s, UI_LINEA, x, y + 1, w, h - 2)
     ui_rect(s, borde, x + 2, y + 1, w - 4, h - 2)           # borde de color
@@ -863,6 +917,14 @@ def ui_tecla(s, x, y, letra, abajo=False):
     """Tecla de teclado pixel art. Devuelve su ancho."""
     x, y = int(x), int(y) + (1 if abajo else 0)
     w = ui_ancho(letra) + 6
+    if not _FUENTE[-1]:                                          # tecla chica (11 de alto)
+        ui_rect(s, UI_LINEA, x + 1, y, w - 2, 11)
+        ui_rect(s, UI_LINEA, x, y + 1, w, 9)
+        ui_rect(s, (170, 150, 120), x + 1, y + 9, w - 2, 1)
+        ui_rect(s, UI_CREMA, x + 1, y + 1, w - 2, 8)
+        ui_rect(s, (255, 250, 238), x + 2, y + 1, w - 4, 1)
+        s.blit(ui_texto(letra, UI_FONDO, None), (x + 3, y))
+        return w
     ui_rect(s, UI_LINEA, x + 1, y, w - 2, 12)
     ui_rect(s, UI_LINEA, x, y + 1, w, 10)
     ui_rect(s, (170, 150, 120), x + 1, y + 9, w - 2, 2)          # canto de la tecla
@@ -993,14 +1055,14 @@ CONFLICTOS_C2 = {
             ("C", "Inmutabilidad con 'Adenda Ágil'", (5, 5, 4, 5), 4.85, None)],
         acuerdo="Nada se borra: el registro es inmutable. El médico corrige con el botón '+ Nota de Rectificación', "
                 "que genera una adenda firmada, y la auditoría corre en segundo plano sin hacer lenta la pantalla.",
-        intro=[("jeremy", "Buen día. Estoy atendiendo una consulta y me equivoqué en el diagnóstico.", "neutral")],
-        antes=[("jeremy", "Si me equivoco en un diagnóstico, necesito corregirlo rápido."),
-               ("carmen", "La NTS 139 no permite borrar registros clínicos."),
-               ("jeremy", "Pero tengo pacientes esperando. No puedo perder tiempo en cada corrección.", "molesto"),
-               ("carmen", "Si borramos algo, ya nadie sabe qué se escribió ni quién lo hizo.", "preocupado"),
-               ("yo", "Los dos tienen razón. Evaluemos tres caminos con criterios con peso.")],
-        despues=[("jeremy", "Con la nota de rectificación corrijo en segundos."),
-                 ("carmen", "Y como nada se borra, la norma se cumple.")]),
+        intro=[("jeremy", "Buen día. Estoy atendiendo y me equivoqué: puse un diagnóstico que no era.", "neutral")],
+        antes=[("jeremy", "Voy a borrarlo y escribir el correcto. No puedo dejar en la historia un error mío."),
+               ("carmen", "No puede borrarlo. La NTS 139 dice que lo escrito en una historia clínica no se elimina."),
+               ("jeremy", "¿Y entonces cómo lo corrijo? Tengo pacientes esperando, no puedo estar pidiendo permiso cada vez que me equivoque.", "molesto"),
+               ("carmen", "Es que si se borra, nadie sabrá qué se escribió antes ni quién lo cambió. Todo tiene que quedar registrado.", "preocupado"),
+               ("yo", "Los dos tienen razón: hay que corregir rápido, pero sin borrar nada. Evaluemos tres caminos con criterios con peso.")],
+        despues=[("jeremy", "Dejo el diagnóstico original y agrego mi nota de rectificación con el correcto. Lo corrijo en segundos."),
+                 ("carmen", "Y como el original no se borra y queda firmado, la norma se cumple.")]),
     "c2": dict(
         sala="farmacia", titulo="CONFLICTO 2 · FARMACIA VS. PACIENTES", tabla="Tabla 9",
         criterios=[("Menos espera", 35), ("Control de stock", 35), ("Simplicidad", 20), ("Cero papel", 10)],
@@ -1010,13 +1072,13 @@ CONFLICTOS_C2 = {
             ("C", "Cola virtual con despacho en 1 clic", (5, 5, 4, 5), 4.80, None)],
         acuerdo="La receta llega al instante a farmacia. El técnico identifica al paciente por DNI, entrega el "
                 "medicamento y pulsa 'Dispensar': el stock se descuenta solo (RF-008), sin papel.",
-        intro=[("yasuri", "Hola, vengo a recoger mi receta.", "neutral")],
-        antes=[("patroclo", "Cada medicamento que sale tiene que descontarse del stock."),
-               ("yasuri", "¡Pero no queremos hacer cola para recoger la receta!"),
+        intro=[("yasuri", "Buenas tardes, vengo a recoger los medicamentos de mi receta.", "neutral")],
+        antes=[("patroclo", "Buenas tardes. Espere un momento, por favor: tengo que apuntar cada medicamento que entrego para que el stock cuadre."),
+               ("yasuri", "Claro, pero no quiero esperar tanto para recoger mi medicamento.", "molesto"),
                ("patroclo", "Y yo no puedo atender rápido si tengo que anotar cada salida a mano.", "molesto"),
                ("yo", "Busquemos la opción que cuide el stock sin hacerlos esperar.")],
         despues=[("patroclo", "Pulso 'Dispensar' y el stock se descuenta solo."),
-                 ("yasuri", "Y mi receta llega al instante. ¡Sin colas!")]),
+                 ("yasuri", "Qué bien, mi receta llegó antes que yo y no tuve que esperar.")]),
     "c3": dict(
         sala="triaje", titulo="CONFLICTO 3 · LOS QUE REGISTRAN VS. TI", tabla="Tabla 10", apagon=True,
         criterios=[("Seguridad de datos", 35), ("No perder datos", 35), ("Costo", 15), ("Rapidez", 15)],
@@ -1026,14 +1088,14 @@ CONFLICTOS_C2 = {
             ("C", "Autoguardado local cada 30 s, cifrado", (4, 5, 3, 4), 4.20, None)],
         acuerdo="El sistema guarda en el equipo cada 30 segundos lo que se registra, cifrado, y lo borra cuando "
                 "termina de sincronizar con el servidor (RNF-008). No se pierde trabajo y los datos quedan protegidos.",
-        intro=[("sara", "Estoy tomando la presión y la temperatura de los pacientes.", "neutral")],
-        antes=[("sara", "¡Se cortó la conexión y estaba registrando los signos vitales!"),
-               ("leonidas", "Si se guarda en el equipo sin protección, los datos de salud quedan expuestos (Ley 29733)."),
-               ("sara", "Si no se guarda en el equipo, pierdo lo que ya registré.", "preocupado"),
-               ("leonidas", "Lo entiendo, pero son datos de salud. No pueden quedar expuestos.", "preocupado"),
-               ("yo", "Comparemos tres formas de guardar con criterios con peso.")],
-        despues=[("sara", "Ahora ya no pierdo lo registrado si se va la conexión."),
-                 ("leonidas", "Y los datos viajan cifrados. Así sí.")]),
+        intro=[("sara", "Estoy tomando la presión y la temperatura de un paciente y lo voy anotando en el sistema.", "neutral")],
+        antes=[("sara", "¡Se fue la conexión y perdí todo lo que estaba anotando! Necesito que se guarde también en la computadora."),
+               ("leonidas", "Entiendo, pero ahí los datos de salud quedarían sin protección y cualquiera podría verlos. La Ley 29733 nos obliga a cuidarlos."),
+               ("sara", "Pero si no se guarda ahí, cada corte me obliga a empezar de nuevo con mi paciente.", "preocupado"),
+               ("leonidas", "Tienes razón, no puedes perder tu trabajo. Pero tampoco podemos dejar los datos expuestos.", "preocupado"),
+               ("yo", "Hay que cuidar las dos cosas: no perder datos y protegerlos. Comparemos tres formas de guardar con criterios con peso.")],
+        despues=[("sara", "Ahora, si se va la conexión, no pierdo lo que ya anoté."),
+                 ("leonidas", "Y queda guardado con clave (cifrado), así nadie más puede leerlo. Así sí.")]),
 }
 # Capítulo 1: lo que dice cada stakeholder al presentarse (2 líneas) y cómo se le gestiona (Tabla 7)
 PRESENTACIONES = {
@@ -1047,8 +1109,8 @@ PRESENTACIONES = {
                  "Aquí entregamos los medicamentos y lo anotamos todo en un cuaderno. Quisiera despachar las recetas sin depender de él."],
     "yasuri": ["Hola, soy Yasuri. Hablo en nombre de los pacientes.",
                "Lo que queremos es que nos atiendan sin tanta demora."],
-    "arian": ["Buenos días, soy Arian Juan de Dios, de Administración.",
-              "Yo decido en qué se usa el presupuesto, es decir, qué módulos del sistema se hacen primero."],
+    "arian": ["Buenos días, soy Arian Juan de Dios, administrador del centro de salud.",
+              "Superviso el personal, el presupuesto y los recursos. Yo decido qué módulos del sistema se hacen primero."],
     "carmen": ["Soy Carmen Ochoa, del MINSA.",
                "Reviso que las historias clínicas cumplan la NTS 139."],
     "mariajose": ["Hola, soy María José, de admisión.",
@@ -1171,6 +1233,8 @@ class Game:
         return ZONES[-1]
 
     def show_banner(self, text):
+        if text.startswith("Conflicto:"):                        # el cartel al pasar cerca de un conflicto ya no sale
+            return
         self.banner, self.banner_t = text, 170
 
     def near_door(self):
@@ -1464,7 +1528,7 @@ class Game:
             if t >= t_black:
                 tr["phase"], tr["t"] = "fadein", 0
                 if kind == "hospital":
-                    self.show_banner("Entra a cada sala y habla con cada persona (E)")
+                    self._pensar_al_entrar()
         elif ph == "fadein":
             self.fade = max(0.0, 1.0 - t / t_in)
             if t >= t_in:
@@ -1831,7 +1895,7 @@ class Game:
             self._logro(CAPITULOS[0]["logro"])
             self.desbloqueados = max(self.desbloqueados, 2)
             self.buzon_nuevo = True
-            self.show_banner("¡Misión cumplida! Sal del centro de salud y revisa el buzón")
+            self.pensar("¡Ya conocí a los 8! Debería salir y revisar el buzón...", esperar=True)
 
     def _logro(self, texto):
         if texto and texto not in self.logros:              # cada logro sale una sola vez
@@ -2150,18 +2214,52 @@ class Game:
         for i, (t, c) in enumerate(lineas):
             s.blit(ui_texto(t, c), (x + 6, y + 3 + 10 * i))
 
+    def _lado_marca(self, cx, top, ancho, alto, gap=3, lado=1):
+        """Globos y checks van al costado de la cabeza: así no chocan con la barra de arriba,
+        con la puerta de abajo ni con las partículas que salen sobre el personaje.
+        Devuelve (x_centro, y_arriba, arriba?)."""
+        en_sala = getattr(self, "scene", "") == "sala"
+        mitad = SPRITE // 2 + 6 if en_sala else 16
+        x = int(cx) + lado * (mitad + gap + ancho // 2)
+        if x + ancho // 2 > W - 3 or x - ancho // 2 < 3:
+            x = int(cx) - lado * (mitad + gap + ancho // 2)
+        return x, max(27, int(top) + (6 if en_sala else 3)), False
+
+    def _con_check(self, nid):
+        """El check verde solo aparece cuando ya cumpliste la misión de ESE capítulo con esa persona."""
+        cap = getattr(self, "capitulo", 1)
+        if cap == 1:
+            return nid in self.collected
+        if cap == 2:
+            if nid == "arian":
+                return self.c2["modulos"]
+            return any(nid in c["members"] and self.c_resolved[k] for k, c in CONFLICTS.items())
+        if cap == 3:
+            return nid in ("mariajose", "yasuri") and self.c3["inicio"]
+        return False
+
     def _ui_globo_stakeholder(self, s, n, cx, top, feet, en_mapa):
         conflict = n.get("conflict")
-        if conflict and not self.c_resolved[conflict] and (self.c_alpha[conflict] > 0.5 if en_mapa else self.npc_alpha[n["id"]] > 0.5):
-            ty = int(top) - 19
-            if ty < 26:
-                ty = int(feet) + 8
-            _c_globo(s, int(cx), ty, "", puntos=(self.t // 16) % 3 + 1)   # solo "..."; lo que dicen se ve al hablar
-        elif self.npc_alpha[n["id"]] > 0.5:
-            lin = [(t, UI_CREMA) for t in ui_partir(n["name"], 150)] + [(t, UI_ORO) for t in ui_partir(n["role"], 150)]
-            self._ui_globo(s, cx, top, lin, feet=feet)
-        elif n["id"] in self.collected:
-            ui_icono(s, int(cx) - 4, int(top) - 12, ICONO_OK, PAL_OK)    # marca de "identificado"
+        cerca = self.npc_alpha[n["id"]] > 0.5
+        activo = bool(conflict) and not self.c_resolved[conflict] and (
+            self.c_alpha[conflict] > 0.3 if en_mapa else self.capitulo == 2)
+        globo = activo and (self.c_alpha[conflict] > 0.5 if en_mapa else not cerca)
+        if activo:                                              # rayo de conflicto encima de la cabeza
+            self._ui_rayo(s, cx, int(top) - 8 + math.sin(self.t * 0.2) * 2)
+        if globo:                                               # "..." al costado
+            otro = [m for m in CONFLICTS[conflict]["members"] if m != n["id"]][0]
+            if en_mapa:
+                ox = self.map_pos(otro)[0] + 16 - self.cam_mapa()[0]
+            else:
+                ox = self._sala_x(otro) + SPRITE / 2
+            lado = -1 if ox > cx else 1                         # el globo va del lado contrario a su compañero
+            gx, gy, _arr = self._lado_marca(cx, top, 17, 13, lado=lado)
+            _c_globo(s, gx, gy, "", puntos=(self.t // 16) % 3 + 1, cola=False)
+        elif cerca and not en_mapa:                             # en el pasillo no: se amontonaban
+            if getattr(self, "pensamiento", None) is None:     # nombre y cargo en una etiqueta a sus pies
+                self._ui_nombre(s, n, cx, GROUND if feet is None else feet)
+        elif not activo and self._con_check(n["id"]):
+            ui_icono(s, int(cx) - 4, int(top) - 12, ICONO_OK, PAL_OK)    # check encima de la cabeza
 
     def _ui_rayo(self, s, cx, cy):
         """Rayito de conflicto entre dos stakeholders (se usará en el capítulo de conflictos)."""
@@ -2516,7 +2614,8 @@ class Game:
                 fin()
 
     def _texto_dialogo(self, p):
-        return ui_partir(p["texto"], 270)
+        with fuente_grande():
+            return ui_partir(p["texto"], 270)
 
     def _modal_tecla(self, key):
         m = self.modal
@@ -2724,7 +2823,7 @@ class Game:
             self._logro(CAPITULOS[1]["logro"])
             self.desbloqueados = max(self.desbloqueados, 3)
             self.buzon_nuevo = True
-            self.show_banner("¡Misión cumplida! Sal del centro de salud y revisa el buzón")
+            self.pensar("Listo, ya tomamos todas las decisiones. Debería salir y revisar el buzón...", esperar=True)
 
     # --- Capítulo 2: los módulos ---------------------------------------------
     def _paginas_modulos(self):
@@ -2822,12 +2921,12 @@ class Game:
             dict(tipo="dialogo", quien="mariajose", emo="preocupado",
                  texto="Sin DNI igual tengo que abrirle su historia clínica. ¿El sistema lo permite?"),
             dict(tipo="dialogo", quien="yo", emo="neutral",
-                 texto="Sí. Sigamos el hilo de ese requerimiento por todo el expediente: son 4 puertas, una por artefacto."),
+                 texto="Sí, el sistema debe permitirlo. Sigamos ese requisito paso a paso: son 4 puertas, una por cada documento del proyecto."),
         ]
 
     def _fin_inicio_hilo(self):
         self.c3["inicio"] = True
-        self.show_banner("Sigue el hilo dorado: sal al pasillo y busca la puerta 1")
+        self.pensar("Debería seguir el hilo dorado hasta la puerta 1...")
 
     def _puerta_hilo_cerca(self):
         fx, fy = self.mx + 16, self.my + 28
@@ -2854,7 +2953,7 @@ class Game:
                     dict(tipo="dialogo", quien="mariajose", emo="contento",
                          texto="Con el código temporal quedó registrada."),
                     dict(tipo="dialogo", quien="yo", emo="contento",
-                         texto="Así con cualquier requisito: si uno cambia, sabemos exactamente qué más cambia."),
+                         texto="Así podemos seguir cualquier requisito: si algo cambia, sabemos qué más hay que revisar."),
                     dict(tipo="tarjeta", titulo="¿Y SI EL PROFE ELIGE OTRO REQUISITO?", fuente="Tabla 38", icono="ok",
                          lineas=[("Una buena segunda opción es la nota de rectificación:", UI_GRIS),
                                  ("RF-005A / RF-005B → CU-004 → AtencionMedica y NotaRectificacion → filas F-06 a F-09.", UI_CREMA),
@@ -2866,7 +2965,7 @@ class Game:
     def _fin_hilo(self):
         self.c3["fin"] = True
         self._logro(CAPITULOS[2]["logro"])
-        self.show_banner("¡Misión cumplida! Sal del centro de salud para el cierre")
+        self.pensar("Ya seguí todo el hilo. Debería salir del centro de salud...", esperar=True)
 
     def _tarjeta_puerta(self, i):
         if i == 0:
@@ -3089,11 +3188,6 @@ class Game:
                 sx, top, feet = nx + 16 - cx + dx, ny - cy + dy, ny + 30 - cy
                 if 0 <= sx <= W and 0 <= feet <= H:
                     self._ui_globo_stakeholder(s, n, sx, top, feet, True)
-            for k, c in CONFLICTS.items():
-                if self.c_alpha[k] > 0.3 and not self.c_resolved[k]:
-                    ax, ay = self.map_pos(c["members"][0])
-                    bx, by = self.map_pos(c["members"][1])
-                    self._ui_rayo(s, (ax + bx) / 2 + 16 - cx, (ay + by) / 2 - 8 - cy + math.sin(self.t * 0.2) * 2)
             return
         cerca = self._cerca_en_sala()
         presentes = self._presentes(self.sala)
@@ -3103,11 +3197,6 @@ class Game:
             sx = self._sala_x(n["id"])
             dx, dy, _ = self._pose(n)
             self._ui_globo_stakeholder(s, n, sx + dx * 2 + SPRITE / 2, GROUND - FEET + dy * 2, None, False)
-        if self.capitulo == 2 and len(presentes) > 1:            # rayo entre los dos que discuten
-            k = TAREA_DE_SALA.get(self.sala)
-            if k in CONFLICTS and not self.c_resolved[k]:
-                xs = [self._sala_x(n["id"]) + SPRITE / 2 for n in presentes]
-                self._ui_rayo(s, sum(xs) / len(xs), GROUND - FEET - 4 + math.sin(self.t * 0.2) * 2)
 
     def _retrato(self, quien, emo=None):
         """Retrato 60x60 para los diálogos. Busca assets/retrato_<personaje>_<emocion>.png;
@@ -3203,6 +3292,17 @@ class Game:
                 ui_tecla(s, hx, fy - 1, "E", (self.t // 24) % 2 == 1)
                 s.blit(ui_texto(pie, UI_CREMA), (hx + 13, fy + 1))
 
+    _ui_modal_base = _ui_modal
+
+    def _ui_modal(self, s):
+        m = self.modal
+        if m is None:
+            return
+        if m["paginas"][m["i"]]["tipo"] == "ficha":
+            return self._ui_modal_base(s)
+        with fuente_grande():
+            return self._ui_modal_base(s)
+
     def _ui_ficha(self, s, p, m):
         """Ficha del stakeholder en el centro: carita, poder, interés, cuadrante y lo que necesita."""
         n = self.npc_by_id[p["id"]]
@@ -3246,7 +3346,7 @@ class Game:
             tw = ui_ancho("CONTINUAR")
             kx = x + w - 8 - tw - 5 - (ui_ancho("E") + 6)
             ui_tecla(s, kx, y + h - 17, "E", (self.t // 24) % 2 == 1)
-            s.blit(ui_texto("CONTINUAR", UI_CREMA), (kx + ui_ancho("E") + 6 + 5, y + h - 15))
+            s.blit(ui_texto("CONTINUAR", UI_CREMA), (kx + ui_ancho("E") + 6 + 5, y + h - 17))
 
     def _ui_abrir(self, s, p, m):
         """Aviso: ¿quieres abrir el diagrama? (SÍ lo abre desde la carpeta diagramas)."""
@@ -3277,7 +3377,7 @@ class Game:
                      fondo=UI_FONDO2 if sel else UI_FONDO, brillo=sel)
             t = ui_texto(txt, UI_CREMA if sel else UI_GRIS)
             s.blit(t, (ox + (114 - t.get_width()) // 2, oy + 4))
-        h = ui_texto("A D ELEGIR · E ACEPTAR", (110, 124, 160))
+        h = ui_texto("A / D ELEGIR · E ACEPTAR", (110, 124, 160))
         s.blit(h, (x + (bw - h.get_width()) // 2, y + bh - 12))
 
     def _ui_dialogo(self, s, p, m):
@@ -3361,30 +3461,34 @@ class Game:
             cw = nombre_w if i == 0 else (20 if i < 5 else 34)
             s.blit(ui_texto(c, UI_ORO), (cx + 3, ty))
             cx += cw
+        ry = ty + 12
         for r, (letra, nombre, notas, total, motivo) in enumerate(conf["alternativas"]):
-            ry = ty + 12 + r * 20
             sel, tach = r == m["sel"], r in m["tachadas"]
-            ui_rect(s, (48, 64, 106) if sel else (28, 38, 66), x + 8, ry, w - 16, 18)
-            if sel:
-                for (rx, ry2, rw, rh) in ((x + 8, ry, w - 16, 1), (x + 8, ry + 17, w - 16, 1), (x + 8, ry, 1, 18), (x + w - 9, ry, 1, 18)):
-                    ui_rect(s, UI_ORO, rx, ry2, rw, rh)
-            col = UI_GRIS if tach else UI_CREMA
             lin = ui_partir(f"{letra}. {nombre}", nombre_w - 8)[:2]
+            rh = 18 if len(lin) == 1 else 26                    # si el nombre ocupa 2 líneas, la fila crece
+            ui_rect(s, (48, 64, 106) if sel else (28, 38, 66), x + 8, ry, w - 16, rh)
+            if sel:
+                for (rx, ry2, rw, rh2) in ((x + 8, ry, w - 16, 1), (x + 8, ry + rh - 1, w - 16, 1), (x + 8, ry, 1, rh), (x + w - 9, ry, 1, rh)):
+                    ui_rect(s, UI_ORO, rx, ry2, rw, rh2)
+            col = UI_GRIS if tach else UI_CREMA
             for j, l in enumerate(lin):
-                s.blit(ui_texto(l, col), (x + 11 + (0 if j == 0 else 12), ry + (5 if len(lin) == 1 else 1 + 9 * j)))
+                s.blit(ui_texto(l, col), (x + 11 + (0 if j == 0 else 12), ry + (5 if len(lin) == 1 else 3 + 10 * j)))
+            vy = ry + (rh - 18) // 2 + 5                        # números centrados en la fila
             cx = x + 8 + nombre_w
             for v in notas:
-                s.blit(ui_texto(str(v), col), (cx + 6, ry + 5))
+                s.blit(ui_texto(str(v), col), (cx + 6, vy))
                 cx += 20
-            s.blit(ui_texto(f"{total:.2f}", UI_ORO if not tach else UI_GRIS), (cx + 5, ry + 5))
+            s.blit(ui_texto(f"{total:.2f}", UI_ORO if not tach else UI_GRIS), (cx + 5, vy))
             if tach:
-                ui_rect(s, UI_ROJO, x + 10, ry + 9, w - 20, 1)
+                ui_rect(s, UI_ROJO, x + 10, ry + rh // 2, w - 20, 1)
+            ry += rh + 2
+        my = ry + 4
         if m["msg"]:
             texto, color = m["msg"]
             for k, l in enumerate(ui_partir(texto, w - 18)[:2]):
-                s.blit(ui_texto(l, color), (x + 9, ty + 76 + k * 10))
+                s.blit(ui_texto(l, color), (x + 9, my + k * 10))
         else:
-            s.blit(ui_texto("¿Cuál camino eligió el equipo por consenso?", UI_GRIS), (x + 9, ty + 76))
+            s.blit(ui_texto("¿Cuál camino eligió el equipo por consenso?", UI_GRIS), (x + 9, my))
 
     def _ui_apagon(self, s, m):
         t = m["t"]
@@ -3459,22 +3563,29 @@ class Game:
             elif libre and self.px < 34:
                 pregunta = "SALIR"
 
-        self._ui_barra(s, zona)
         if self.modal is None:
-            if self.scene == "ext":
-                self._ui_mision(s)
-            else:
-                self._ui_panel(s)
-            self._ui_actores(s)
-            self._ui_aviso(s)
+            self._ui_actores(s)                                 # checks, rayos y globos quedan DEBAJO de la barra
+        self._ui_barra(s, zona)
+        self._panel_w = 0                                       # ancho de la tarjeta de la derecha (para el aviso)
+        if self.modal is None:
             if pregunta:
                 if quien:
                     self._ui_tecla_flotante(s, quien[0], quien[1], pregunta)
             if self.menu is None:
-                self._ui_ayuda(s, self.scene == "map")
+                self._ui_pensamiento(s)
+            if self.logro_t <= 0:                               # la tarjeta de misión siempre queda por encima
+                if not self.panel_visible:
+                    self._ui_pestana(s)
+                elif self.scene == "ext":
+                    self._ui_mision(s)
+                else:
+                    self._ui_panel(s)
+            self._ui_aviso(s)
         self._ui_modal(s)
         self._ui_logro(s)
         self._ui_menu(s)
+        if getattr(self, "controles", False):
+            self._ui_controles(s)
         screen.blit(pygame.transform.scale(s, (SCREEN_W, SCREEN_H)), (0, 0))
     # ======================== FIN DE LOS CAPÍTULOS 2 Y 3 ========================
 
@@ -3513,14 +3624,17 @@ class Game:
 
     # --- teclas y mouse -----------------------------------------------------
     def tecla(self, key):
+        if getattr(self, "controles", False):                   # la tarjeta de controles se cierra con cualquier tecla
+            self.controles = False
+            return None
         if key == pygame.K_m:                                   # silenciar / activar las voces
             if not hasattr(self, "_voz"):
                 self._voz = Voces()
             self._voz.activo = not self._voz.activo
             self.show_banner("Sonido: " + ("ACTIVADO" if self._voz.activo else "SILENCIADO"))
             return None
-        if key == pygame.K_h and self.fase == "juego":           # mostrar / ocultar los controles
-            self.ayuda_visible = not getattr(self, "ayuda_visible", True)
+        if key == pygame.K_h and self.fase == "juego" and self.modal is None:   # tarjeta de controles
+            self.controles = True
             return None
         if self.fase == "titulo":
             self._ini_init()
@@ -3536,11 +3650,16 @@ class Game:
                 self._cap["t"] = 150                           # adelanta hasta que se desvanezca
             return None
         if self.fase == "cine":
+            en_fin = self._cine_en_tarjeta_final()
             if key in (pygame.K_e, pygame.K_RETURN, pygame.K_SPACE, pygame.K_RIGHT, pygame.K_d):
+                if en_fin:
+                    return "salir"                              # tarjeta final: E cierra el juego
                 self._cine_mover(+1)
             elif key in (pygame.K_a, pygame.K_LEFT):
                 self._cine_mover(-1)
             elif key == pygame.K_ESCAPE:
+                if en_fin:
+                    return "salir"
                 self._cine_saltar()
             return None
         return self._tecla_c23(key)
@@ -3555,6 +3674,8 @@ class Game:
                     self._ti_sel = i
                     return self._elegir_inicio(i)
         elif self.fase == "cine":
+            if self._cine_en_tarjeta_final():
+                return "salir"
             self._cine_mover(+1)
         return None
 
@@ -3574,6 +3695,10 @@ class Game:
         if destino < 0:
             return
         c["estado"], c["e"], c["destino"] = "out", 0, destino
+
+    def _cine_en_tarjeta_final(self):
+        c = self.cine
+        return bool(c.get("final")) and c["i"] >= len(CINE_FINAL) and c["estado"] == "play"
 
     def _cine_lista(self):
         return CINE_FINAL if self.cine.get("final") else CINE_ESCENAS
@@ -3596,6 +3721,7 @@ class Game:
         """Desde el buzón: sale la pantalla negra 'CAPÍTULO N + título' y recién ahí cambia el capítulo."""
         self._ini_init()
         self._cap = dict(sel=self.menu["sel"], t=0, hecho=False)
+        self.pensamiento, self._pens_pend = None, None          # el pensamiento del capítulo anterior ya no vale
         self.menu = None
         self.fase = "tarjeta_cap"
 
@@ -3608,7 +3734,11 @@ class Game:
         if self.fase == "juego":
             if getattr(self, "_fade_in", 0) > 0:
                 self._fade_in -= 1
-            return self._update_c23(left, right, up, down, run)
+            if getattr(self, "controles", False):
+                left = right = up = down = run = False
+            r = self._update_c23(left, right, up, down, run)
+            self._update_pensamiento()
+            return r
         self._ini_init()
         self.t += 1
         self._ti_t += 1
@@ -3765,11 +3895,7 @@ class Game:
                     pts = [(ax, y + 4), (ax, y + 12), (ax + 4, y + 8)] if lado == 0 else [(ax + 4, y + 4), (ax + 4, y + 12), (ax, y + 8)]
                     pygame.draw.polygon(s, UI_ORO, pts)
         pie = ui_texto("ACORI Y. · CANDIOTTI M. · GAITAN G.", UI_CREMA)
-        s.blit(pie, ((W - pie.get_width()) // 2, 184))
-        pie2 = ui_texto("CIIN1252P · INGENIERÍA DE SOFTWARE", UI_GRIS)
-        s.blit(pie2, (6, H - 12))
-        pie3 = ui_texto("W S · E ELEGIR", UI_GRIS)
-        s.blit(pie3, (W - pie3.get_width() - 6, H - 12))
+        s.blit(pie, (6, H - 12))
 
     # --- cinemática ---------------------------------------------------------
     def _c_npc(self, s, key, x, dy=0, flip=False):
@@ -3794,8 +3920,9 @@ class Game:
                 col = UI_ORO if k == i else (62, 78, 116)
                 pygame.draw.rect(s, UI_LINEA, (x0 + k * 8 - 1, H - 10, 7, 7))
                 pygame.draw.rect(s, col, (x0 + k * 8, H - 9, 5, 5))
-            ayu = ui_texto("E SIGUIENTE · ESC SALTAR", UI_GRIS)
-            s.blit(ayu, (W - ayu.get_width() - 5, H - 11))
+            if i == 0:                                           # la ayuda solo aparece en la primera escena
+                ayu = ui_texto("E SIGUIENTE · ESC SALTAR", UI_GRIS)
+                s.blit(ayu, (W - ayu.get_width() - 5, H - 11))
         elif c.get("final"):
             self._cine_tarjeta_fin(s, t)
         else:
@@ -3844,8 +3971,9 @@ class Game:
         if (t // 100) % 2:
             _c_globo(s, 288 + SPRITE // 2, GROUND - FEET - 17, "", puntos=(t // 15) % 4)
         # cartelito de lugar
-        ui_marco(s, 6, 6, ui_ancho("DIRESA LA LIBERTAD · CENTRO DE SALUD") + 12, 14, borde=UI_ORO)
-        s.blit(ui_texto("DIRESA LA LIBERTAD · CENTRO DE SALUD", UI_CREMA), (12, 9))
+        _lug = ui_texto("DIRESA LA LIBERTAD · CENTRO DE SALUD", UI_CREMA)
+        ui_marco(s, 6, 6, _lug.get_width() + 22, 19, borde=UI_ORO)
+        s.blit(_lug, (6 + 11, 6 + (19 - _lug.get_height()) // 2 + 1))
 
     # Escena 2: Consultorio. Dos historiales del mismo paciente que no coinciden.
     def _cine_consultorio(self, s, t):
@@ -3860,19 +3988,19 @@ class Game:
             self._c_npc(s, "jeremy", 168, -((t // 40) % 2), flip=True)
         if ciclo < 110:
             self._particulas(s, jer, xj + SPRITE // 2, GROUND - FEET, 2)
-        for k, (x_fin, x_ini, ini, texto, dni) in enumerate(((106, -70, 110, "PEREZ JUAN", "DNI 4821"),
-                                                              (216, 390, 190, "PEREZ J.", "DNI 4812"))):
+        for k, (x_fin, x_ini, ini, tag, dni) in enumerate(((106, -70, 110, "HISTORIA 1", "4821"),
+                                                            (216, 390, 190, "HISTORIA 2", "4812"))):
             if ciclo >= ini:
                 p = min(1.0, (ciclo - ini) / 40)
                 p = 1 - (1 - p) ** 3
                 x = int(x_ini + (x_fin - x_ini) * p)
                 _c_hoja(s, x, 72, 64, 44, lineas=0)
-                s.blit(ui_texto(texto, UI_LINEA, sombra=None), (x + 4, 77))
-                s.blit(ui_texto(dni, (60, 80, 150), sombra=None), (x + 4, 87))
-                for q in range(3):
-                    pygame.draw.rect(s, (150, 156, 176), (x + 4, 98 + q * 5, 56 - q * 8, 1))
+                s.blit(ui_texto(tag, (130, 136, 156), sombra=None), (x + 4, 74))
+                s.blit(ui_texto("PEREZ JUAN", UI_LINEA, sombra=None), (x + 4, 84))
                 tinta = (200, 60, 70) if k else (60, 80, 150)
-                pygame.draw.rect(s, tinta, (x + 4, 112 - 0, 12, 1))
+                s.blit(ui_texto("DNI " + dni, tinta, sombra=None), (x + 4, 94))
+                for q in range(2):
+                    pygame.draw.rect(s, (150, 156, 176), (x + 4, 106 + q * 4, 56 - q * 12, 1))
         if ciclo >= 235:
             pop = 1 + (0.25 if ciclo < 255 else 0)
             _c_no_igual(s, 195, 94, 2)
@@ -3891,16 +4019,14 @@ class Game:
             _c_caja(s, 150 + k * 13, 124, k)
         # lo que dice el cuaderno
         if ciclo >= 30:
-            _c_hoja(s, 62, 52, 56, 44, lineas=0)
-            _c_cuaderno(s, 70, 56, 22, 12)
-            n12 = ui_texto("12", UI_LINEA, sombra=None)
-            s.blit(pygame.transform.scale(n12, (n12.get_width() * 3, n12.get_height() * 3)), (74, 70))
+            _c_hoja(s, 62, 48, 56, 52, lineas=0)
+            _c_cuaderno(s, 66, 52, 22, 12)
+            _c_numero(s, "12", 62 + 28, 82, 3, UI_LINEA)
         # lo que hay en el estante
         if ciclo >= 290:
-            _c_hoja(s, 268, 52, 56, 44, lineas=0)
-            _c_caja(s, 276, 58, 0)
-            n9 = ui_texto("9", UI_LINEA, sombra=None)
-            s.blit(pygame.transform.scale(n9, (n9.get_width() * 3, n9.get_height() * 3)), (294, 70))
+            _c_hoja(s, 268, 48, 56, 52, lineas=0)
+            _c_caja(s, 272, 52, 0)
+            _c_numero(s, "9", 268 + 28, 82, 3, UI_LINEA)
         if ciclo >= 340:
             _c_no_igual(s, 196, 76, 2)
         if ciclo >= 390:
@@ -3920,7 +4046,7 @@ class Game:
                 pygame.draw.rect(s, (150, 186, 156), (mx0 + 2, gy, 31, 1))
             if (t // 10) % 3 == 0:
                 pygame.draw.rect(s, (255, 226, 130), (mx0 + 8 + (t // 10) % 5 * 5, 130, 6, 3))
-        destinos = [(96, 52), (136, 40), (176, 58), (214, 44), (126, 84), (170, 96), (214, 86), (250, 66)]
+        destinos = [(84, 50), (150, 50), (216, 50), (282, 50), (117, 88), (183, 88), (249, 88), (315, 88)]
         for k, (dx, dy) in enumerate(destinos):                   # los archivos salen volando del archivero
             ini = 30 + k * 42
             if ciclo < ini:
@@ -3930,7 +4056,7 @@ class Game:
             x = 90 + (dx - 90) * p
             y = 140 + (dy - 140) * p - math.sin(p * 3.14) * 18
             flot = math.sin(t * 0.05 + k) * 2 if p >= 1 else 0
-            _c_archivo(s, int(x), int(y + flot))
+            _c_archivo(s, int(x), int(y + flot), NOMBRES_EXCEL[k] if p >= 1 else None)
         leo = self.npc_by_id["leonidas"]
         self._c_npc(s, "leonidas", 214, -((t // 5) % 2), flip=True)
         self._particulas(s, leo, 214 + SPRITE // 2, GROUND - FEET, 2)
@@ -3941,40 +4067,44 @@ class Game:
     def _cine_direccion(self, s, t):
         s.blit(self.salas["direccion"], (0, 0))
         ciclo = t % 560
-        ari = self.npc_by_id["arian"]
         golpe = -1 if (t // 14) % 2 else 0
         self._c_npc(s, "arian", 150, golpe, flip=True)
-        self._particulas(s, ari, 150 + SPRITE // 2, GROUND - FEET, 2)
-        # calendario que pasa los días
+        # calendario grande que cuenta los días hasta el plazo
         dia = min(30, 1 + ciclo // 9)
         temblor = (1 if (t // 3) % 2 else -1) if dia >= 30 else 0
-        cx0 = 258 + temblor
-        pygame.draw.rect(s, UI_LINEA, (cx0 - 1, 52, 52, 56))
-        pygame.draw.rect(s, (250, 250, 246), (cx0, 53, 50, 54))
-        pygame.draw.rect(s, (214, 60, 70), (cx0, 53, 50, 11))
-        for rx in (cx0 + 8, cx0 + 38):
-            pygame.draw.rect(s, UI_LINEA, (rx, 49, 3, 8))
-        num = ui_texto(str(dia), UI_LINEA, sombra=None)
-        num = pygame.transform.scale(num, (num.get_width() * 4, num.get_height() * 4))
-        s.blit(num, (cx0 + (50 - num.get_width()) // 2, 70))
-        # el reporte vacío en la mesa
-        _c_hoja(s, 206, 126, 20, 26, lineas=0)
-        for q in range(2):
-            pygame.draw.rect(s, (200, 204, 216), (209, 130 + q * 4, 14, 1))
+        cx0, cw = 232 + temblor, 76
+        pygame.draw.rect(s, UI_LINEA, (cx0 - 1, 49, cw + 2, 64))
+        pygame.draw.rect(s, (250, 250, 246), (cx0, 50, cw, 62))
+        pygame.draw.rect(s, (214, 60, 70), (cx0, 50, cw, 14))
+        for rx in (cx0 + 12, cx0 + cw - 15):
+            pygame.draw.rect(s, UI_LINEA, (rx, 46, 3, 8))
+        pl = ui_texto("PLAZO", (255, 255, 255), sombra=None)
+        s.blit(pl, (cx0 + (cw - pl.get_width()) // 2, 52))
+        _c_numero(s, str(dia), cx0 + cw // 2, 88, 4, (214, 60, 70) if dia >= 30 else UI_LINEA)
+        # el informe de gestión que debe entregar: sin datos reunidos, todo queda en "?"
+        tit = ui_texto("INFORME DE GESTIÓN", UI_LINEA, sombra=None)
+        rw = tit.get_width() + 12
+        rx0, ry0 = 186, 116
+        _c_hoja(s, rx0, ry0, rw, 50, lineas=0)
+        s.blit(tit, (rx0 + 6, ry0 + 3))
+        pygame.draw.rect(s, (150, 156, 176), (rx0 + 4, ry0 + 13, rw - 8, 1))
+        for q, fila in enumerate(("PERSONAL", "STOCK", "ATENCIONES")):
+            yy = ry0 + 17 + q * 10
+            s.blit(ui_texto(fila, (90, 96, 124), sombra=None), (rx0 + 6, yy))
+            if ciclo >= 120 + q * 60:
+                s.blit(ui_texto("?", (200, 60, 70), sombra=None), (rx0 + rw - 14, yy))
         if ciclo >= 300:
             _c_globo(s, 150 + SPRITE // 2 - 3, GROUND - FEET - 17, "!", (200, 60, 70))
-            _c_equis(s, 216, 140, 2)
 
     # Escena 6: Reuniones. El MINSA no puede comprobar nada.
     def _cine_reuniones(self, s, t):
         s.blit(self.salas["reuniones"], (0, 0))
         ciclo = t % 560
         sel = min(3, ciclo // 90)
-        for k, x in enumerate((196, 236, 276)):
+        for k, x in enumerate(DOC_X):
             alto = 4 if (sel == k and ciclo % 90 > 8) else 0
-            _c_hoja(s, x, 119 - alto, 22, 24, lineas=3)
-            if sel > k or (sel == k and ciclo % 90 > 40):
-                _c_equis(s, x + 11, 113 - alto, 2)
+            marca = "x" if (sel > k or (sel == k and ciclo % 90 > 40)) else None
+            _c_doc(s, x, 113 - alto, DOC_TXT[k], marca)
         self._c_npc(s, "carmen", 128, 0, flip=True if (ciclo < 270 or (ciclo // 18) % 2) else False)
         if ciclo >= 290:
             _c_globo(s, 128 + SPRITE // 2 - 3, GROUND - FEET - 17, "?", (200, 60, 70))
@@ -3986,11 +4116,15 @@ class Game:
         a, b = ui_texto(txt[0], UI_ORO), ui_texto(txt[1], UI_CREMA)
         bw = max(a.get_width(), b.get_width()) + 16
         x = (W - bw) // 2
-        ui_marco(s, x, 6, bw, 26)
+        ui_marco(s, x, 6, bw, 24)
         s.blit(a, ((W - a.get_width()) // 2, 9))
-        s.blit(b, ((W - b.get_width()) // 2, 19))
+        s.blit(b, ((W - b.get_width()) // 2, 18))
 
     def _cine_tarjeta_fin(self, s, t):
+        with fuente_grande():
+            self._cine_tarjeta_fin_(s, t)
+
+    def _cine_tarjeta_fin_(self, s, t):
         s.fill((8, 12, 24))
         for k in range(18):
             sx = (k * 97 + t // 3) % W
@@ -4010,7 +4144,7 @@ class Game:
             else:
                 yy += 8
         if t > 30 and (t // 24) % 2 == 0:
-            im = ui_texto("Presiona E para volver al juego", UI_GRIS)
+            im = ui_texto("Presiona E para cerrar el juego", UI_GRIS)
             s.blit(im, (W // 2 - im.get_width() // 2, H - 22))
 
     def _cine_f_admision(self, s, t):
@@ -4024,7 +4158,7 @@ class Game:
         pygame.draw.rect(s, UI_LINEA, (mx - 1, my - 1, 62, 34))
         pygame.draw.rect(s, (28, 40, 72), (mx, my, 60, 32))
         pygame.draw.rect(s, (46, 140, 78), (mx, my, 60, 5))
-        s.blit(ui_texto("PR-003", UI_CREMA, sombra=None), (mx + 4, my + 8))
+        s.blit(ui_texto("SIN DNI", UI_CREMA, sombra=None), (mx + 4, my + 8))
         if ciclo >= 110:
             s.blit(ui_texto("COD-T-0001", UI_ORO, sombra=None), (mx + 4, my + 17))
         else:
@@ -4060,7 +4194,7 @@ class Game:
             pp = min(1.0, (ciclo - 60) / 40)
             pp = 1 - (1 - pp) ** 3
             nx = int(390 + (222 - 390) * pp)
-            _c_hoja(s, nx, 72, 64, 44, lineas=0)
+            _c_hoja(s, nx, 72, max(64, ui_ancho("RECTIFICACIÓN") + 10), 44, lineas=0)   # ancho según el texto
             s.blit(ui_texto("NOTA DE", (40, 130, 70), sombra=None), (nx + 4, 76))
             s.blit(ui_texto("RECTIFICACIÓN", (40, 130, 70), sombra=None), (nx + 4, 85))
             s.blit(ui_texto("DNI 4821", (60, 80, 150), sombra=None), (nx + 4, 96))
@@ -4083,14 +4217,12 @@ class Game:
         # pantalla del sistema: 9
         _c_hoja(s, 62, 52, 56, 44, lineas=0, color=(28, 40, 72))
         s.blit(ui_texto("SISTEMA", UI_CREMA, sombra=None), (68, 56))
-        n9 = ui_texto("9", (110, 220, 130), sombra=None)
-        s.blit(pygame.transform.scale(n9, (n9.get_width() * 3, n9.get_height() * 3)), (86, 68))
+        _c_numero(s, "9", 62 + 28, 80, 3, (110, 220, 130))
         # estante: 9
         _c_hoja(s, 268, 52, 56, 44, lineas=0)
         s.blit(ui_texto("ESTANTE", UI_LINEA, sombra=None), (274, 56))
         _c_caja(s, 276, 70, 0)
-        n9b = ui_texto("9", UI_LINEA, sombra=None)
-        s.blit(pygame.transform.scale(n9b, (n9b.get_width() * 3, n9b.get_height() * 3)), (296, 68))
+        _c_numero(s, "9", 268 + 34, 80, 3, UI_LINEA)
         if ciclo >= 80:
             _c_hoja(s, 184, 62, 26, 24, lineas=0)
             _c_igual(s, 197, 74, 2)
@@ -4138,14 +4270,14 @@ class Game:
         s.blit(self.salas["admin"], (0, 0))
         ciclo = t % 560
         # base de datos central con candado, donde antes estaba el archivero
-        bx, by = 90, 118
+        bx, by = 74, 70
         pygame.draw.rect(s, UI_LINEA, (bx - 1, by - 1, 32, 36))
         for k in range(3):
             yy = by + 2 + k * 11
             pygame.draw.rect(s, (60, 100, 170), (bx, yy, 30, 10))
             pygame.draw.rect(s, (110, 150, 220), (bx, yy, 30, 2))
             pygame.draw.rect(s, (120, 230, 140) if (t // 20 + k) % 3 else (80, 130, 90), (bx + 22, yy + 4, 4, 3))
-        ui_icono(s, bx + 11, by + 38, ICONO_CANDADO, PAL_CANDADO)
+        ui_icono(s, bx + 12, by - 11, ICONO_CANDADO, PAL_CANDADO)
         origenes = [(96, 52), (136, 40), (176, 58), (214, 44), (126, 84), (170, 96), (214, 86), (250, 66)]
         for k, (ox, oy) in enumerate(origenes):                  # los Excel sueltos viajan a la base de datos
             ini = 20 + k * 36
@@ -4167,13 +4299,315 @@ class Game:
     def _cine_f_reuniones(self, s, t):
         s.blit(self.salas["reuniones"], (0, 0))
         ciclo = t % 480
-        for k, x in enumerate((196, 236, 276)):
-            _c_hoja(s, x, 119, 22, 24, lineas=3)
-            if ciclo >= 40 + k * 50:
-                _c_visto(s, x + 11, 113, 2)
+        for k, x in enumerate(DOC_X):
+            _c_doc(s, x, 113, DOC_TXT[k], "ok" if ciclo >= 40 + k * 50 else None)
         self._c_npc(s, "carmen", 128, -((t // 40) % 2), flip=True)
         if ciclo >= 210:
             ui_icono(s, 128 + SPRITE // 2 - 5, GROUND - FEET - 16, ICONO_OK, PAL_OK)
+
+
+    # ======================== INTERFAZ: TARJETAS A LA DERECHA, CONTROLES Y PENSAMIENTOS ========================
+    def _ui_cartel(self, s, lin, pips=None):
+        """Tarjeta de la misión, arriba a la derecha. lin = [(texto, color)], pips = (llenos, total)."""
+        bw = max(ui_ancho(l) for l, _ in lin) + 16
+        if pips:
+            bw = max(bw, pips[1] * 7 + 14)
+        bh = 9 * len(lin) + 9 + (9 if pips else 0)
+        x, y = W - bw - 4, 26
+        self._panel_w = bw
+        ui_marco(s, x, y, bw, bh)
+        for i, (l, c) in enumerate(lin):
+            s.blit(ui_texto(l, c), (x + 8, y + 4 + 9 * i))
+        if pips:
+            py = y + 4 + 9 * len(lin) + 2
+            for k in range(pips[1]):                             # una casillita por stakeholder
+                ui_rect(s, UI_LINEA, x + 8 + k * 7, py, 6, 6)
+                ui_rect(s, UI_ORO if k < pips[0] else (62, 78, 116), x + 9 + k * 7, py + 1, 4, 4)
+
+    def _ui_pestana(self, s):
+        """Con TAB la tarjeta se esconde: queda una pestañita '<' en el borde derecho."""
+        x, y = W - 13, 26
+        self._panel_w = 15
+        ui_marco(s, x, y, 15, 17)
+        f = ui_texto("<", UI_ORO)
+        s.blit(f, (x + 5 - (self.t // 20) % 2, y + 4))
+
+    def _ui_tarjeta_c1(self, s):
+        n = len(self.collected)
+        lin = [("CONOCE A LOS", UI_ORO), ("STAKEHOLDERS", UI_ORO)]
+        if n >= len(NPCS):
+            lin += [(f"{n}/{len(NPCS)} ¡LISTO!", UI_VERDE), ("Sal y revisa el buzón", UI_CREMA)]
+        else:
+            lin += [(f"{n}/{len(NPCS)}", UI_CREMA)]
+        self._ui_cartel(s, lin, (n, len(NPCS)))
+
+    def _ui_mision(self, s):
+        """Tarjeta de la misión en la calle (a la derecha)."""
+        self._c23()
+        if self.banner_t > 0 or self.menu is not None or self.modal is not None:
+            return
+        if self.buzon_nuevo:
+            lin = [("¡MISIÓN CUMPLIDA!", UI_ORO), ("Revisa el buzón", UI_CREMA), ("de la izquierda", UI_CREMA)]
+        elif self.capitulo == 1:
+            cap = CAPITULOS[0]
+            lin = [("CAPÍTULO 1", UI_ORO)] + [(l, UI_CREMA) for l in ui_partir(cap["mision"], 90)] \
+                  + [(f"Llevas {len(self.collected)}/{len(NPCS)}", UI_GRIS)]
+        elif self.capitulo == 2:
+            lin = [("CAPÍTULO 2", UI_ORO), ("Prioriza los módulos y", UI_CREMA), ("resuelve 3 conflictos", UI_CREMA),
+                   (f"Llevas {self._progreso_c2()}/4", UI_GRIS)]
+        elif not self.c3["fin"]:
+            lin = [("CAPÍTULO 3", UI_ORO), ("Sigue el hilo del RF-001", UI_CREMA), ("Empieza en Admisión", UI_CREMA),
+                   (f"Puertas {self.c3['puertas']}/4", UI_GRIS)]
+        else:
+            lin = [("¡JUEGO COMPLETADO!", UI_ORO), ("Gracias por jugar", UI_CREMA)]
+        self._ui_cartel(s, lin)
+
+    def _ui_panel(self, s):
+        """Capítulos 2 y 3 dentro del centro de salud: lista de tareas (a la derecha)."""
+        self._c23()
+        if self.capitulo == 1:
+            return self._ui_tarjeta_c1(s)
+        if self.capitulo == 2:
+            titulo = "DECISIONES"
+            filas = [(self.c2["modulos"], "Prioriza 2 de 5 módulos", "Reuniones")]
+            filas += [(self.c_resolved[k], f"Conflicto {i + 1}", SALAS[CONFLICTOS_C2[k]["sala"]]["name"])
+                      for i, k in enumerate(CONFLICTS)]
+        else:
+            titulo = "SIGUE EL HILO"
+            filas = [(self.c3["inicio"], "Habla con María José", "Admisión")]
+            nombres = ["El requisito", "El caso de uso", "Las clases", "La matriz"]
+            filas += [(self.c3["puertas"] > i, f"Puerta {i + 1}", nombres[i]) for i in range(4)]
+        hechas = sum(1 for f in filas if f[0])
+        num = ui_texto(f"{hechas}/{len(filas)}", UI_CREMA)
+        w = max(max(ui_ancho(t) + 5 + ui_ancho(d) for _, t, d in filas) + 26,
+                ui_ancho(titulo) + num.get_width() + 24)
+        x, y = W - w - 4, 26
+        self._panel_w = w
+        alto = 18 + 10 * len(filas) + 3
+        ui_marco(s, x, y, w, alto)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, w - 6, 11)
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 14, w - 6, 1)
+        s.blit(ui_texto(titulo, UI_ORO), (x + 8, y + 3))
+        s.blit(num, (x + w - 8 - num.get_width(), y + 3))
+        siguiente = next((i for i, f in enumerate(filas) if not f[0]), None)
+        for i, (ok, txt, donde) in enumerate(filas):
+            yy = y + 17 + i * 10
+            if ok:
+                ui_icono(s, x + 6, yy, ICONO_OK, PAL_OK)
+            else:
+                ui_rect(s, UI_LINEA, x + 7, yy + 1, 7, 7)
+                ui_rect(s, (62, 78, 116), x + 8, yy + 2, 5, 5)
+            color = UI_GRIS if ok else (UI_ORO if i == siguiente else UI_CREMA)
+            s.blit(ui_texto(txt, color), (x + 18, yy - 1))
+            s.blit(ui_texto(donde, (110, 124, 160)), (x + 18 + ui_ancho(txt) + 5, yy - 1))
+
+    def _ui_aviso(self, s):
+        """Cinta de aviso arriba (a la izquierda de la tarjeta de la derecha)."""
+        if self.banner_t <= 0:
+            return
+        texto = self.banner
+        if texto.startswith("Resuelto"):
+            borde, icono, pal = UI_VERDE, ICONO_OK, PAL_OK
+        elif texto.startswith("Conflicto"):
+            borde, icono, pal = UI_ROJO, ICONO_RAYO, PAL_RAYO
+        elif texto.startswith(("¡Recorrido", "¡Misión", "Capítulo")):
+            borde, icono, pal = UI_ORO, ICONO_ESTRELLA, PAL_ESTRELLA
+        elif "identificad" in texto:
+            borde, icono, pal = UI_ORO, ICONO_OK, PAL_OK
+        else:
+            borde, icono, pal = UI_ORO, None, None
+        iw = 14 if icono else 0
+        libre = W - getattr(self, "_panel_w", 0) - 16             # espacio a la izquierda de la tarjeta
+        lin = ui_partir(texto, min(250, libre - 16) - iw)
+        bw = max(ui_ancho(l) for l in lin) + 16 + iw
+        bh = 9 * len(lin) + 8
+        x = max(4, (libre + 4) // 2 - bw // 2)
+        y = 26 if self.logro_t <= 0 else 60
+        if self.banner_t > 158:
+            y -= (self.banner_t - 158) * 4
+        elif self.banner_t < 12:
+            y -= (12 - self.banner_t) * 4
+        ui_marco(s, x, y, bw, bh, borde=borde, fondo=(18, 24, 44))
+        if icono:
+            ui_icono(s, x + 6, y + (bh - 9) // 2, icono, pal)
+        for i, l in enumerate(lin):
+            s.blit(ui_texto(l, UI_CREMA), (x + 8 + iw, y + 3 + 9 * i))
+
+    def _ui_logro(self, s):
+        if self.logro_t <= 0:
+            return
+        self.logro_t -= 1
+        t1, t2 = "¡LOGRO OBTENIDO!", self.logro_txt
+        bw = max(ui_ancho(t1), ui_ancho(t2)) + 36
+        x, y = W - bw - 4, 26
+        if self.logro_t > 280:
+            x += (self.logro_t - 280) * 10
+        elif self.logro_t < 16:
+            x += (16 - self.logro_t) * 14
+        ui_marco(s, x, y, bw, 28, borde=(150, 150, 162), fondo=(40, 40, 48))
+        ui_rect(s, (24, 24, 30), x + 5, y + 4, 19, 20)
+        ui_icono(s, x + 10, y + 9, ICONO_TROFEO, PAL_TROFEO)
+        s.blit(ui_texto(t1, (255, 255, 85)), (x + 29, y + 4))
+        s.blit(ui_texto(t2, (255, 255, 255)), (x + 29, y + 14))
+
+    def _ui_tecla_flotante(self, s, cx, top, texto=""):
+        """La E flota sobre la cabeza del jugador y dice qué hace (ENTRAR, SALIR, HABLAR...)."""
+        dy = int(math.sin(self.t * 0.12) * 2)
+        lab = ui_texto(texto, UI_CREMA) if texto else None
+        kw = ui_ancho("E") + 6
+        bw = 4 + kw + (4 + lab.get_width() + 2 if lab else 4)
+        bh = 17
+        bx = max(3, min(W - bw - 3, int(cx) - bw // 2))
+        by = int(top) - 26 + dy
+        ui_marco(s, bx, by, bw, bh)
+        ui_tecla(s, bx + 4, by + 3, "E", (self.t // 24) % 2 == 1)
+        if lab:
+            s.blit(lab, (bx + 4 + kw + 4, by + 3))
+        ui_rect(s, UI_LINEA, int(cx) - 2, by + bh, 5, 1)
+        ui_rect(s, UI_LINEA, int(cx) - 1, by + bh + 1, 3, 1)
+        ui_rect(s, UI_LINEA, int(cx), by + bh + 2, 1, 1)
+
+    def _ui_nombre(self, s, n, cx, feet):
+        """Nombre y cargo en una etiqueta sencilla a los pies del personaje (no choca con la E)."""
+        a, b = ui_texto(n["name"], UI_CREMA), ui_texto(n["role"], UI_ORO)
+        w = max(a.get_width(), b.get_width()) + 6
+        h = 20
+        x = max(2, min(W - w - 2, int(cx) - w // 2))
+        y = min(H - h - 2, int(feet) + 5)
+        ui_rect(s, UI_LINEA, x - 1, y - 1, w + 2, h + 2)
+        ui_rect(s, (24, 32, 58), x, y, w, h)
+        s.blit(a, (x + 3, y + 1))
+        s.blit(b, (x + 3, y + 10))
+
+    def _ui_menu(self, s):
+        if self.menu is None:
+            return
+        ui_rect(s, (0, 0, 0, 140), 0, 0, W, H)
+        pie = [("W", None), ("S", "ELEGIR"), ("E", "ABRIR"), ("ESC", "CERRAR"), ("H", "CONTROLES")]
+        ancho_pie = sum(ui_ancho(k) + 6 + 2 + (ui_ancho(t) + 9 if t else 0) for k, t in pie)
+        bw = max(max(ui_ancho(c["titulo"]) for c in CAPITULOS) + 64, ancho_pie + 20, 200)
+        bh = 18 + 24 * len(CAPITULOS) + 20
+        x, y = (W - bw) // 2, (H - bh) // 2
+        ui_marco(s, x, y, bw, bh)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, bw - 6, 11)
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 14, bw - 6, 1)
+        s.blit(ui_texto("BUZÓN · CAPÍTULOS", UI_ORO), (x + 8, y + 3))
+        for i, cap in enumerate(CAPITULOS):
+            ry = y + 18 + i * 24
+            libre = i < self.desbloqueados
+            elegido = libre and i == self.menu["sel"]
+            ui_rect(s, (48, 64, 106) if elegido else (28, 38, 66), x + 6, ry, bw - 12, 22)
+            if elegido:
+                ui_rect(s, UI_ORO, x + 6, ry, bw - 12, 1)
+                ui_rect(s, UI_ORO, x + 6, ry + 21, bw - 12, 1)
+                ui_rect(s, UI_ORO, x + 6, ry, 1, 22)
+                ui_rect(s, UI_ORO, x + bw - 7, ry, 1, 22)
+                fx = x + 10 + (self.t // 15) % 2
+                for k in range(4):
+                    ui_rect(s, UI_ORO, fx + k, ry + 7 + k, 1, 8 - 2 * k)
+            bx = x + 18
+            ui_rect(s, UI_LINEA, bx, ry + 3, 16, 16)
+            ui_rect(s, UI_ORO if libre else (70, 78, 100), bx + 1, ry + 4, 14, 14)
+            nt = ui_texto(str(i + 1), UI_FONDO, None)
+            s.blit(nt, (bx + 8 - (nt.get_width() - 2) // 2, ry + 5))
+            if libre:
+                s.blit(ui_texto(f"CAPÍTULO {i + 1}", UI_ORO), (x + 40, ry + 2))
+                s.blit(ui_texto(cap["titulo"], UI_CREMA), (x + 40, ry + 11))
+                if cap.get("logro") and cap["logro"] in self.logros:
+                    ui_icono(s, x + bw - 20, ry + 7, ICONO_OK, PAL_OK)
+                elif i > 0 and (self.t // 20) % 3 != 0:
+                    s.blit(ui_texto("NUEVO", (255, 255, 85)), (x + bw - 14 - ui_ancho("NUEVO"), ry + 7))
+            else:
+                ui_icono(s, x + 40, ry + 7, ICONO_CANDADO, PAL_CANDADO)
+                s.blit(ui_texto("???", UI_GRIS), (x + 52, ry + 6))
+        hy = y + bh - 16
+        hx = x + 10
+        for k, t in pie:
+            hx += ui_tecla(s, hx, hy, k) + 2
+            if t:
+                s.blit(ui_texto(t, UI_GRIS), (hx + 2, hy))
+                hx += ui_ancho(t) + 9
+
+    def _ui_controles(self, s):
+        """Tarjeta cuadrada con todos los controles (H). Se cierra con cualquier tecla."""
+        ui_rect(s, (0, 0, 0, 150), 0, 0, W, H)
+        filas = [(("W", "A", "S", "D"), "MOVERTE"), (("SHIFT",), "CORRER"), (("E",), "HABLAR / ENTRAR"),
+                 (("TAB",), "MOSTRAR LA MISIÓN"), (("M",), "SONIDO"), (("F11",), "PANTALLA COMPLETA"),
+                 (("ESC",), "SALIR DEL JUEGO")]
+        tx_off = max(sum(ui_tecla_ancho(k) + 2 for k in teclas) for teclas, _ in filas) + 18
+        cw = tx_off + max(ui_ancho(t) for _, t in filas) + 14
+        ch = 18 + 14 * len(filas) + 16
+        x, y = (W - cw) // 2, (H - ch) // 2
+        ui_marco(s, x, y, cw, ch)
+        ui_rect(s, UI_FONDO2, x + 3, y + 3, cw - 6, 11)
+        ui_rect(s, UI_ORO_OSC, x + 3, y + 14, cw - 6, 1)
+        s.blit(ui_texto("CONTROLES", UI_ORO), (x + 8, y + 3))
+        for i, (teclas, txt) in enumerate(filas):
+            yy = y + 19 + i * 14
+            kx = x + 10
+            for k in teclas:
+                kx += ui_tecla(s, kx, yy, k) + 2
+            s.blit(ui_texto(txt, UI_CREMA), (x + tx_off, yy))
+        if (self.t // 24) % 2 == 0:
+            t = ui_texto("Presiona cualquier tecla", UI_GRIS)
+            s.blit(t, (x + (cw - t.get_width()) // 2, y + ch - 13))
+
+    # --- pensamientos del jugador (texto abajo, sin sonido) ---
+    def pensar(self, texto, esperar=False, tras_logro=False):
+        """esperar=True: sale cuando no hay ventanas abiertas (y, si tras_logro, cuando se va el logro)."""
+        if esperar:
+            self._pens_pend = texto
+            self._pens_tras_logro = tras_logro
+        else:
+            self.pensamiento = dict(texto=texto, t=0)
+
+    def _pensar_al_entrar(self):
+        vistos = self.__dict__.setdefault("_pens_vistos", set())
+        if self.buzon_nuevo or self.capitulo in vistos:
+            return
+        vistos.add(self.capitulo)
+        txt = {1: "Debería entrar a cada sala para conocer a cada persona...",
+               2: "Debería pasar por la sala de reuniones y ver dónde están discutiendo...",
+               3: "Debería empezar por Admisión, donde está María José..."}.get(self.capitulo)
+        if txt:
+            self.pensar(txt)
+
+    def _update_pensamiento(self):
+        pend = getattr(self, "_pens_pend", None)
+        if pend and (self.logro_t <= 0 or not getattr(self, "_pens_tras_logro", True)) \
+                and self.modal is None and self.trans is None and self.menu is None:
+            self._pens_pend = None
+            self.pensar(pend)
+        p = getattr(self, "pensamiento", None)
+        if p is None or self.modal is not None or self.menu is not None:
+            return
+        p["t"] += 1
+        if p["t"] > len(p["texto"]) / 0.6 + 180 + 45:            # escribe, se queda ~3 s y se desvanece
+            self.pensamiento = None
+
+    def _ui_pensamiento(self, s):
+        p = getattr(self, "pensamiento", None)
+        if p is None:
+            return
+        n = min(len(p["texto"]), int(p["t"] * 0.6))
+        fin = len(p["texto"]) / 0.6 + 180
+        alfa = 255 if p["t"] < fin else max(0, int(255 * (1 - (p["t"] - fin) / 45)))
+        lineas = ui_partir(p["texto"], 300)
+        y = H - 12 - 9 * (len(lineas) - 1)
+        fw = max(ui_ancho(l) for l in lineas) + 24
+        franja = pygame.Surface((fw, 9 * len(lineas) + 8), pygame.SRCALPHA)
+        franja.fill((6, 10, 22, int(170 * alfa / 255)))
+        s.blit(franja, ((W - fw) // 2, y - 4))
+        quedan = n
+        for l in lineas:
+            parte = l[:max(0, quedan)]
+            quedan -= len(l) + 1
+            if parte:
+                full = ui_texto(l, (255, 255, 255))
+                im = ui_texto(parte, (255, 255, 255)).copy()
+                im.set_alpha(alfa)
+                s.blit(im, ((W - full.get_width()) // 2, y))
+            y += 9
 
 
 # ============================================================================
@@ -4187,6 +4621,7 @@ BTN_Y = (142, 163)                       # arriba de cada botón (en píxeles in
 
 # Cinemática: cada escena es una sala con su stakeholder haciendo lo suyo (casi sin texto).
 CINE_ESCENAS = ["admision", "consultorio", "farmacia", "admin", "direccion", "reuniones"]
+NOMBRES_EXCEL = ["pacientes", "stock", "stock 2", "citas", "reporte", "final", "final 2", "copia"]
 # Cinemática final: la solución ya funcionando. Cada escena lleva un letrerito corto (lo demás lo narra el equipo).
 CINE_FINAL = ["f_admision", "f_consultorio", "f_farmacia", "f_triaje", "f_admin", "f_reuniones"]
 CINE_FINAL_TXT = [
@@ -4247,6 +4682,11 @@ def _lerp_c(a, b, t):
 
 def _texto_grande(txt, esc, color, claro=None, borde=UI_LINEA):
     """Texto pixel art grande, con contorno oscuro, sombra abajo y brillo arriba."""
+    with fuente_grande():
+        return _texto_grande_(txt, esc, color, claro, borde)
+
+
+def _texto_grande_(txt, esc, color, claro=None, borde=UI_LINEA):
     tilde = any(ch in ACENTOS for ch in _limpiar(txt))          # las tildes ocupan las 2 filas de arriba
     y0, alto = (0, 9) if tilde else (2, 7)
     base = ui_texto(txt, color, sombra=None).subsurface((0, y0, ui_ancho(txt) + 2, alto)).copy()
@@ -4357,13 +4797,14 @@ def _c_hoja(s, x, y, w=9, h=11, color=(250, 250, 246), lineas=3, lc=(150, 156, 1
             pygame.draw.rect(s, lc, (x + 1, yy, w - 3 - (k % 2) * 2, 1))
 
 
-def _c_globo(s, cx, top, glyph, col=UI_LINEA, puntos=None):
+def _c_globo(s, cx, top, glyph, col=UI_LINEA, puntos=None, cola=True):
     """Globito de pensamiento con '?', '!' o '...'. cx = centro, top = arriba."""
     x, w, h = int(cx) - 8, 17, 13
     pygame.draw.rect(s, UI_LINEA, (x, top, w, h))
     pygame.draw.rect(s, (252, 252, 250), (x + 1, top + 1, w - 2, h - 2))
-    pygame.draw.rect(s, UI_LINEA, (x + 6, top + h, 3, 2))
-    pygame.draw.rect(s, (252, 252, 250), (x + 7, top + h - 1, 1, 1))
+    if cola:
+        pygame.draw.rect(s, UI_LINEA, (x + 6, top + h, 3, 2))
+        pygame.draw.rect(s, (252, 252, 250), (x + 7, top + h - 1, 1, 1))
     if puntos is not None:
         for k in range(puntos):
             pygame.draw.rect(s, UI_LINEA, (x + 4 + k * 4, top + 8, 2, 2))
@@ -4377,6 +4818,43 @@ def _c_no_igual(s, cx, cy, esc=1, col=(228, 70, 70)):
         pygame.draw.rect(s, c, (cx - 6 * esc + dx, cy - 4 * esc + dy, 12 * esc, 2 * esc))
         pygame.draw.rect(s, c, (cx - 6 * esc + dx, cy + 1 * esc + dy, 12 * esc, 2 * esc))
         pygame.draw.line(s, c, (cx + 4 * esc + dx, cy - 8 * esc + dy), (cx - 4 * esc + dx, cy + 8 * esc + dy), max(2, esc * 2))
+
+
+def ui_tecla_ancho(letra):
+    return ui_ancho(letra) + 6
+
+
+def _c_numero(s, txt, cx, cy, esc, color):
+    """Número grande (letra chica ampliada), centrado en (cx, cy)."""
+    im = ui_texto(txt, color, sombra=None)
+    im = im.subsurface((0, 2, im.get_width() - 2, 6)).copy()
+    im = pygame.transform.scale(im, (im.get_width() * esc, im.get_height() * esc))
+    s.blit(im, (int(cx) - im.get_width() // 2, int(cy) - im.get_height() // 2))
+
+
+def _c_etiqueta(s, cx, y, texto):
+    """Etiqueta chiquita y sencilla: tira azul oscura con letras claras (se lee sobre cualquier fondo)."""
+    im = ui_texto(texto, (250, 240, 220), sombra=None)
+    w = im.get_width() + 6
+    x = int(cx) - w // 2
+    pygame.draw.rect(s, (24, 32, 58), (x, y, w, 10))
+    s.blit(im, (x + 3, y))
+
+
+DOC_X = (172, 226, 280)
+DOC_TXT = ("HISTORIAS", "STOCK", "REPORTES")
+
+
+def _c_doc(s, x, y, etiqueta, marca=None):
+    """Documento con su etiqueta arriba. marca: 'x' (no se puede comprobar) u 'ok' (trazable)."""
+    _c_hoja(s, x, y, 46, 30, lineas=0)
+    for q in range(3):
+        pygame.draw.rect(s, (150, 156, 176), (x + 4, y + 6 + q * 8, 38 - (q % 2) * 10, 1))
+    _c_etiqueta(s, x + 23, y - 14, etiqueta)
+    if marca == "x":
+        _c_equis(s, x + 23, y + 15, 2)
+    elif marca == "ok":
+        _c_visto(s, x + 23, y + 13, 2)
 
 
 def _c_igual(s, cx, cy, esc=1, col=(70, 170, 100)):
@@ -4407,13 +4885,24 @@ def _c_cuaderno(s, x, y, w=22, h=15):
         pygame.draw.rect(s, (130, 140, 170), (x + w // 2 + 2, y + 3 + k * 4, w // 2 - 5, 1))
 
 
-def _c_archivo(s, x, y, ang=0):
-    """Archivito de Excel (hoja con una X verde)."""
-    pygame.draw.rect(s, UI_LINEA, (x - 1, y - 1, 13, 15))
-    pygame.draw.rect(s, (250, 250, 246), (x, y, 11, 13))
-    pygame.draw.rect(s, (46, 140, 78), (x, y, 11, 4))
-    pygame.draw.line(s, (46, 140, 78), (x + 3, y + 6), (x + 7, y + 11), 1)
-    pygame.draw.line(s, (46, 140, 78), (x + 7, y + 6), (x + 3, y + 11), 1)
+def _c_archivo(s, x, y, nombre=None):
+    """Archivo de Excel: encabezado verde con la X blanca, tabla de celdas y (opcional) el nombre abajo."""
+    verde = (33, 115, 70)
+    pygame.draw.rect(s, UI_LINEA, (x - 1, y - 1, 19, 22))
+    pygame.draw.rect(s, (250, 250, 246), (x, y, 17, 20))
+    pygame.draw.rect(s, verde, (x, y, 17, 6))
+    pygame.draw.line(s, (255, 255, 255), (x + 2, y + 1), (x + 5, y + 4), 1)
+    pygame.draw.line(s, (255, 255, 255), (x + 5, y + 1), (x + 2, y + 4), 1)
+    pygame.draw.rect(s, (255, 255, 255), (x + 8, y + 2, 6, 1))
+    pygame.draw.rect(s, (255, 255, 255), (x + 8, y + 4, 4, 1))
+    for fy in (y + 9, y + 12, y + 15, y + 18):                   # filas de la tabla
+        pygame.draw.rect(s, (140, 180, 150), (x + 1, fy, 15, 1))
+    for fx in (x + 5, x + 10):                                  # columnas
+        pygame.draw.rect(s, (140, 180, 150), (fx, y + 7, 1, 13))
+    pygame.draw.rect(s, (190, 226, 200), (x + 1, y + 7, 4, 2))   # un par de celdas rellenas
+    pygame.draw.rect(s, (190, 226, 200), (x + 11, y + 13, 5, 2))
+    if nombre:
+        _c_etiqueta(s, x + 8, y + 23, nombre)
 
 
 def _c_caja(s, x, y, tono=0):
@@ -4432,10 +4921,10 @@ TEXTO_VEL = 0.7            # letras por cuadro en la máquina de escribir (~42 l
 VOCES = {                  # onda: cuadrada con "duty" (ancho de pulso) o triangular · tono en Hz
     "yo":        dict(onda=("pulso", 0.50), hz=520, ms=46),
     "jeremy":    dict(onda=("pulso", 0.25), hz=430, ms=44),
-    "carmen":    dict(onda=("tri", 0), hz=640, ms=48),
+    "carmen":    dict(onda=("pulso", 0.375), hz=470, ms=52),
     "patroclo":  dict(onda=("pulso", 0.50), hz=300, ms=52),
     "yasuri":    dict(onda=("pulso", 0.125), hz=720, ms=40),
-    "sara":      dict(onda=("tri", 0), hz=560, ms=46),
+    "sara":      dict(onda=("pulso", 0.25), hz=680, ms=42),
     "leonidas":  dict(onda=("pulso", 0.25), hz=250, ms=50),
     "arian":     dict(onda=("pulso", 0.50), hz=205, ms=56),
     "mariajose": dict(onda=("pulso", 0.125), hz=610, ms=44),
